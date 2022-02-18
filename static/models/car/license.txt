@@ -1,0 +1,11 @@
+Model Information:
+* title:	Baron´s porsche cayman NFSMW
+* source:	https://sketchfab.com/3d-models/baron-s-porsche-cayman-nfsmw-8983e9a85222475d84e4524a57b3fb3d
+* author:	memoov (https://sketchfab.com/movartD)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Baron´s porsche cayman NFSMW" (https://sketchfab.com/3d-models/baron-s-porsche-cayman-nfsmw-8983e9a85222475d84e4524a57b3fb3d) by memoov (https://sketchfab.com/movartD) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
