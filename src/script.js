@@ -26,7 +26,7 @@ const scene = new THREE.Scene()
  */
 const gltfLoader = new GLTFLoader()
 
-//动作混合器
+//加载有动画效果的gltf文件
 let mixer = null
 gltfLoader.load(
     '/models/Fox/glTF/Fox.gltf',
@@ -35,52 +35,48 @@ gltfLoader.load(
         gltf.scene.scale.set(0.025, 0.025, 0.025)
         scene.add(gltf.scene)
         gltf.scene.position.x= 5
-
         //Animation
         mixer = new THREE.AnimationMixer(gltf.scene)
         const action = mixer.clipAction(gltf.animations[2])
         action.play()
     }
 )
-gltfLoader.load(
-    '/models/car/scene.gltf',
-    (gltf) =>
-    {
-        gltf.scene.scale.set(1, 1, 1)
-        console.log(gltf.scene)
-        //gltf.material.emissive =  gltf.material.color
-        //gltf.material.emissiveMap = gltf.material.map
-        scene.add(gltf.scene)
-        gltf.scene.position.x= -5
+
+//加载模型文件 
+//.push()添加至末尾 .pop()删除末尾 .unshift()添加至开头 .splice()切片
+//moudelMessage[路径，长，宽，高，X，Y，Z]
+var modelsMessage = []
+modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-5,0,0)
+modelsMessage.push('/models/car/scene.gltf',1,1,1,0,0,-10)
+modelsMessage.push('/models/test/column.gltf',1,1,1,10,0,0)
+modelsMessage.push('/models/test/notice-board.gltf',1,1,1,-15,0,0)
+modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,0,0,5)
+loadModels(modelsMessage)
+
+
+
+function loadModels(modelsMessage){
+    const numbers  = modelsMessage.length/7
+    //console.log(numbers)
+    for(var i = 0 ; i < numbers; i++){
+        const x = i * 7
+        gltfLoader.load(
+            modelsMessage[0+x],
+            (gltf) =>
+            {
+                gltf.scene.scale.set(
+                    modelsMessage[1+x], 
+                    modelsMessage[2+x], 
+                    modelsMessage[3+x])
+                gltf.scene.position.x=modelsMessage[4+x]
+                gltf.scene.position.y=modelsMessage[5+x]
+                gltf.scene.position.z=modelsMessage[6+x]
+                scene.add(gltf.scene)
+                
+            }
+        )
     }
-)
-// gltfLoader.load(
-//     '/models/car2/scene.gltf',
-//     (gltf) =>
-//     {
-//         gltf.scene.scale.set(1, 1, 1)
-//         gltf.scene.position.z= 5
-//         scene.add(gltf.scene)
-//     }
-// )
-// gltfLoader.load(
-//     '/models/cathedral/scene.gltf',
-//     (gltf) =>
-//     {
-//         gltf.scene.scale.set(0.12, 0.12, 0.12)
-//         gltf.scene.position.set(-55,5,-30)
-//         scene.add(gltf.scene)
-//     }
-// )
-// gltfLoader.load(
-//     '/models/test/untitled.gltf',
-//     (gltf) =>
-//     {
-//         gltf.scene.scale.set(1, 1, 1)
-//         gltf.scene.position.set(0,4,0)
-//         scene.add(gltf.scene)
-//     }
-// )
+}
 
 
 /**
