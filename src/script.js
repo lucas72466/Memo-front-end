@@ -26,6 +26,8 @@ const plane = new THREE.Mesh(
     new THREE.PlaneBufferGeometry(100, 100),
     new THREE.MeshStandardMaterial()  
 )
+//获取光影
+plane.receiveShadow = true
 plane.rotation.x = - Math.PI * 0.5
 plane.position.y = 0
 scene.add(plane)
@@ -69,6 +71,10 @@ function loadModels(modelsMessage){
                 gltf.scene.position.z=modelsMessage[6+x]
                 //为每个对象进行命名编号，注意只能用字符串类型
                 gltf.scene.name = x/7 + 11000 + ''
+                //只能为mesh对象添加阴影，将gltf再展开一层
+                gltf.scene.traverse( function( node ) {
+                    if ( node.isMesh ) { node.castShadow = true; }  
+                } );
                 objectGroup.add(gltf.scene)
                 //console.log(objectGroup.getObjectByName('11001'))               
             }
@@ -107,6 +113,7 @@ gui.add(moonLight, 'intensity').min(0).max(1).step(0.001)
 gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
 gui.add(moonLight.position, 'y').min(- 5).max(5).step(0.001)
 gui.add(moonLight.position, 'z').min(- 5).max(5).step(0.001)
+moonLight.castShadow = true
 scene.add(moonLight)
 
 /**
@@ -172,6 +179,7 @@ const object1 = new THREE.Mesh(
 )
 object1.position.y = 0.5
 object1.name = '001'
+object1.castShadow = true
 objectGroup.add(object1)
 objectGroup.name = 'papa'
 //异常重要,只有在场景加载后，才能在其他地方查到对象
@@ -183,7 +191,8 @@ scene.add(objectGroup)
  const raycaster = new THREE.Raycaster()
  let currentIntersect = null
 
-/**
+
+ /**
  * Mouse
  */
  const mouse = new THREE.Vector2()
@@ -237,7 +246,6 @@ const tick = () =>
             objectGroup.getObjectByName('11004')
         ]
         var intersects = raycaster.intersectObjects(objectsToTest, true)
-
     }
     
     //存放相交的第一个物体
