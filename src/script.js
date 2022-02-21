@@ -15,7 +15,7 @@ const gui = new dat.GUI()
 const canvas = document.querySelector('canvas.webgl')
 
 //fog
-const fog = new THREE.Fog('skyblue', 0.1, 40)
+const fog = new THREE.Fog("rgb(135,206,250)", 0.1, 40)
 
 // Scene
 const scene = new THREE.Scene()
@@ -44,15 +44,14 @@ const gltfLoader = new GLTFLoader()
 //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
 var modelsMessage = []
 var objectGroup = new THREE.Group()
-var numberOfObjects = 6
+var numberOfObjects = 7
 modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-3,0.5,-4)
 modelsMessage.push('/models/car/scene.gltf',1,1,1,0,0,-4)
 modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-5,2,2)
 modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,-5,2,-1.5)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,-3,0.8,-2)
+modelsMessage.push('/models/test/untitled.gltf',0.3,0.3,0.3,0,1,5)
 loadModels(modelsMessage)
-
-
 
 function loadModels(modelsMessage){
     const numbers  = modelsMessage.length/7
@@ -75,8 +74,7 @@ function loadModels(modelsMessage){
                 gltf.scene.traverse( function( node ) {
                     if ( node.isMesh ) { node.castShadow = true; }  
                 } );
-                objectGroup.add(gltf.scene)
-                //console.log(objectGroup.getObjectByName('11001'))               
+                objectGroup.add(gltf.scene)             
             }
         )
     }
@@ -102,12 +100,12 @@ gltfLoader.load(
  * Lights
  */
 // Ambient light
-const ambientLight = new THREE.AmbientLight('#b9d5ff', 0.5)
+const ambientLight = new THREE.AmbientLight("rgb(255, 255, 255)", 0.5)
 gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
 scene.add(ambientLight)
 
 // Directional light
-const moonLight = new THREE.DirectionalLight('#b9d5ff', 0.5)
+const moonLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
 moonLight.position.set(4, 5, - 2)
 gui.add(moonLight, 'intensity').min(0).max(1).step(0.001)
 gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
@@ -164,8 +162,12 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor('skyblue')
-//renderer.outputEncoding = THREE.sRGBEncoding
+// 天空背景颜色
+renderer.setClearColor("rgb(135,206,250)")
+//保证颜色与blender里的一样
+renderer.outputEncoding = THREE.sRGBEncoding
+renderer.gammaOutput = true
+
 //shadows
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -243,7 +245,8 @@ const tick = () =>
             objectGroup.getObjectByName('11001'),
             objectGroup.getObjectByName('11002'),
             objectGroup.getObjectByName('11003'),
-            objectGroup.getObjectByName('11004')
+            objectGroup.getObjectByName('11004'),
+            objectGroup.getObjectByName('11005')
         ]
         var intersects = raycaster.intersectObjects(objectsToTest, true)
     }
