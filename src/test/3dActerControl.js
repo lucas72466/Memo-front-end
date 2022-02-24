@@ -1,12 +1,12 @@
 // author: Fyrestar <info@mevedia.com>
 var camera, scene, renderer, mesh, goal, keys, follow;
 
-//var time = 0;
-///var newPosition = new THREE.Vector3();
-//var matrix = new THREE.Matrix4();
+var time = 0;
+var newPosition = new THREE.Vector3();
+var matrix = new THREE.Matrix4();
 
-//var stop = 1;
-//var DEGTORAD = 0.01745327;
+var stop = 1;
+var DEGTORAD = 0.01745327;
 var temp = new THREE.Vector3;
 var dir = new THREE.Vector3;
 var a = new THREE.Vector3;
@@ -93,7 +93,7 @@ function animate() {
     mesh.rotateY(0.05);
   else if ( keys.d )
     mesh.rotateY(-0.05);
-		
+    
   
   a.lerp(mesh.position, 0.4);
   b.copy(goal.position);

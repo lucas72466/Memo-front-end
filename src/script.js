@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { TetrahedronGeometry } from 'three'
 
 //初始化对象
-var gui, canvas, fog, scene, plane, sizes, ambientLight, moonLight, renderer, controls, camera
+var gui, canvas, fog, scene, plane, sizes, ambientLight, moonLight, renderer, controls, camera, raycaster
 
 init()
 function init(){
@@ -66,17 +66,21 @@ function init(){
     moonLight.castShadow = true
 
     // Base camera
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 500)
-    camera.position.x = 4
-    camera.position.y = 2
-    camera.position.z = 4
-    scene.add(camera)
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
+    camera.position.x = 0
+    camera.position.y = .3
+    camera.position.z = 0
+    camera.lookAt( scene.position );
+    //scene.add(camera)
     
     // Controls
     controls = new OrbitControls(camera, canvas)
     controls.enableDamping = true
     //控制摄像机保持在水平面以上
-    controls.maxPolarAngle = Math.PI * 0.5 - 0.1
+    //controls.maxPolarAngle = Math.PI * 0.5 - 0.1
+
+    raycaster = new THREE.Raycaster()
+    let currentIntersect = null
 }
 
 //Models
@@ -96,8 +100,8 @@ modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-5,2,2)
 modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,-5,2,-1.5)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,-3,0.8,-2)
 modelsMessage.push('/models/test/untitled.gltf',0.3,0.3,0.3,0,1,5)
-loadModels(modelsMessage)
 
+loadModels(modelsMessage)
 function loadModels(modelsMessage){
     const numbers  = modelsMessage.length/7
     for(var i = 0 ; i < numbers; i++){
@@ -141,7 +145,7 @@ gltfLoader.load(
     }
 )
 
-//屏幕事件监听之调整屏幕大小
+//监听调整屏幕大小
 window.addEventListener('resize', () =>
 {
     // Update sizes
@@ -155,51 +159,73 @@ window.addEventListener('resize', () =>
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
+//监听键盘输入
+const keys = {
+    a: false,
+    s: false,
+    d: false,
+    w: false
+  };
+window.addEventListener( 'keydown', function(e) {
+    const key = e.code.replace('Key', '').toLowerCase();
+    if ( keys[ key ] !== undefined )
+      keys[ key ] = true; 
+});
+window.addEventListener( 'keyup', function(e) {
+    const key = e.code.replace('Key', '').toLowerCase();
+    if ( keys[ key ] !== undefined )
+      keys[ key ] = false;
+});
+//监听鼠标移动
+const mouse = new THREE.Vector2()
+window.addEventListener('mousemove', (event) =>{ 
+    mouse.x = event.clientX / sizes.width * 2 - 1
+    mouse.y = - (event.clientY / sizes.height) * 2 + 1
+  })
+  //监听鼠标点击
+window.addEventListener('click', () =>{
+     if(currentIntersect)
+     testObject.material.color.set(0xFFFFFF*Math.random());   
+})
+ 
+
+
 //测试物体
-const object1 = new THREE.Mesh(
+var temp = new THREE.Vector3;
+var dir = new THREE.Vector3;
+var a = new THREE.Vector3;
+var b = new THREE.Vector3;
+var goal = new THREE.Object3D;
+var follow = new THREE.Object3D;
+//摄像机与主物体的距离
+var coronaSafetyDistance = 3;
+var velocity = 0.0;
+var speed = 0.0;
+
+const testObject = new THREE.Mesh(
     new THREE.BoxBufferGeometry( 1, 1, 1 ),
     new THREE.MeshStandardMaterial({ color: '#ff0000' })
 )
-object1.position.y = 0.5
-object1.name = '001'
-object1.castShadow = true
-objectGroup.add(object1)
+testObject.position.y = 0.5
+testObject.name = '001'
+testObject.castShadow = true
+follow.position.z = -coronaSafetyDistance;
+testObject.add( follow )
+// use goal to control the camera
+goal.add( camera )
+//主物体的起始位置
+testObject.rotateY(-2)
+objectGroup.add(testObject)
 objectGroup.name = 'papa'
 //异常重要,只有在场景加载后，才能在其他地方查到对象
 scene.add(objectGroup)
-
-/**
- * Raycaster
- */
- const raycaster = new THREE.Raycaster()
- let currentIntersect = null
-
-
- /**
- * Mouse
- */
- const mouse = new THREE.Vector2()
- window.addEventListener('mousemove', (event) =>
- {
-     mouse.x = event.clientX / sizes.width * 2 - 1
-     mouse.y = - (event.clientY / sizes.height) * 2 + 1
- })
- 
- //点击触发事件
- window.addEventListener('click', () =>
- {
-    if(currentIntersect)
-    {
-        object1.material.color.set(0xFFFFFF*Math.random())
-    }
- })
-
 
 /**
  * Animate
  */
 const clock = new THREE.Clock()
 let previousTime = 0
+let currentIntersect = null
 
 tick()
 function tick(){
@@ -232,24 +258,49 @@ function tick(){
     }
     
     //存放相交的第一个物体
-    if(intersects.length){
-        currentIntersect = intersects[0]
-    }
-    else{
-        currentIntersect = null
-    }
-
+    if(intersects.length)
+        currentIntersect = intersects[0];
+    else
+        currentIntersect = null;
+    
     // Model animation
-    if(mixer){
-        mixer.update(deltaTime)
-    }
+    if(mixer)
+        mixer.update(deltaTime);
 
+
+    //第三人称控制移动，相机距离位置很重要
+    speed = 0.0
+
+    if(keys.w)
+        speed = 0.05;
+    if(keys.s)
+        speed = -0.05;
+    velocity += ( speed - velocity ) * .3;
+    //console.log(velocity)
+    testObject.translateZ( velocity );
+    if(keys.a)
+        testObject.rotateY(0.05);
+    if(keys.d)
+        testObject.rotateY(-0.05);
+    
+    //a是主物体的渐进物体，b是相机位置
+    a.lerp(testObject.position, 0.4);
+    b.copy(goal.position);
+            
+    dir.copy( a ).sub( b ).normalize();
+    //console.log(dir);
+    const dis = a.distanceTo( b ) - coronaSafetyDistance;
+    goal.position.addScaledVector( dir, dis );
+    //镜头过度速度2
+    goal.position.lerp(temp, 0.051);
+    temp.setFromMatrixPosition(follow.matrixWorld);
+    goal.position.y = 1
+    camera.lookAt(testObject.position );
+    
     // Update controls
     controls.update()
-
     // Render
     renderer.render(scene, camera)
-
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
