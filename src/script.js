@@ -5,36 +5,81 @@ import * as dat from 'dat.gui'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { TetrahedronGeometry } from 'three'
 
-/**
- * Base
- */
-// Debug
-const gui = new dat.GUI()
+//初始化对象
+var gui, canvas, fog, scene, plane, sizes, ambientLight, moonLight, renderer, controls, camera
 
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
+init()
+function init(){
+    // Debug
+    gui = new dat.GUI()
+    // Canvas
+    canvas = document.querySelector('canvas.webgl')
+    //Fog
+    fog = new THREE.Fog("rgb(135,206,250)", 0.1, 40)
+    // Scene
+    scene = new THREE.Scene()
+    scene.fog = fog
+    //Plane
+    plane = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(100, 100),
+        new THREE.MeshStandardMaterial()  
+    )
+    //获取光影
+    plane.receiveShadow = true
+    plane.rotation.x = - Math.PI * 0.5
+    plane.position.y = 0
+    scene.add(plane)
+    //页面大小
+    sizes = {
+        width: window.innerWidth,
+        height: window.innerHeight
+    }
+    // Ambient light
+    ambientLight = new THREE.AmbientLight("rgb(255, 255, 255)", 0.5)
+    gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
+    scene.add(ambientLight)
 
-//fog
-const fog = new THREE.Fog("rgb(135,206,250)", 0.1, 40)
+    // Directional light
+    moonLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
+    moonLight.position.set(4, 5, - 2)
+    gui.add(moonLight, 'intensity').min(0).max(1).step(0.001)
+    gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
+    gui.add(moonLight.position, 'y').min(- 5).max(5).step(0.001)
+    gui.add(moonLight.position, 'z').min(- 5).max(5).step(0.001)
+    moonLight.castShadow = true
+    scene.add(moonLight)
 
-// Scene
-const scene = new THREE.Scene()
-scene.fog = fog
+    //渲染器
+    renderer = new THREE.WebGLRenderer({
+        canvas: canvas
+    })
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    // 天空背景颜色
+    renderer.setClearColor("rgb(135,206,250)")
+    //保证颜色与blender里的一样
+    renderer.outputEncoding = THREE.sRGBEncoding
+    
+    //shadows
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    moonLight.castShadow = true
 
-//Plane
-const plane = new THREE.Mesh(
-    new THREE.PlaneBufferGeometry(100, 100),
-    new THREE.MeshStandardMaterial()  
-)
-//获取光影
-plane.receiveShadow = true
-plane.rotation.x = - Math.PI * 0.5
-plane.position.y = 0
-scene.add(plane)
+    // Base camera
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 500)
+    camera.position.x = 4
+    camera.position.y = 2
+    camera.position.z = 4
+    scene.add(camera)
+    
+    // Controls
+    controls = new OrbitControls(camera, canvas)
+    controls.enableDamping = true
+    //控制摄像机保持在水平面以上
+    controls.maxPolarAngle = Math.PI * 0.5 - 0.1
+}
 
-/**
- * Models
- */
+//Models
 const gltfLoader = new GLTFLoader()
 
 //加载模型文件 
@@ -96,88 +141,24 @@ gltfLoader.load(
     }
 )
 
-/**
- * Lights
- */
-// Ambient light
-const ambientLight = new THREE.AmbientLight("rgb(255, 255, 255)", 0.5)
-gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
-scene.add(ambientLight)
-
-// Directional light
-const moonLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-moonLight.position.set(4, 5, - 2)
-gui.add(moonLight, 'intensity').min(0).max(1).step(0.001)
-gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
-gui.add(moonLight.position, 'y').min(- 5).max(5).step(0.001)
-gui.add(moonLight.position, 'z').min(- 5).max(5).step(0.001)
-moonLight.castShadow = true
-scene.add(moonLight)
-
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-
+//屏幕事件监听之调整屏幕大小
 window.addEventListener('resize', () =>
 {
     // Update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
-
     // Update camera
     camera.aspect = sizes.width / sizes.height
     camera.updateProjectionMatrix()
-
     // Update renderer
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 500)
-camera.position.x = 4
-camera.position.y = 2
-camera.position.z = 4
-scene.add(camera)
-
-
-// Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-//控制摄像机保持在水平面以上
-//controls.maxPolarAngle = Math.PI * 0.5 - 0.1
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-// 天空背景颜色
-renderer.setClearColor("rgb(135,206,250)")
-//保证颜色与blender里的一样
-renderer.outputEncoding = THREE.sRGBEncoding
-renderer.gammaOutput = true
-
-//shadows
-renderer.shadowMap.enabled = true
-renderer.shadowMap.type = THREE.PCFSoftShadowMap
-moonLight.castShadow = true
-
-
 //测试物体
 const object1 = new THREE.Mesh(
-    new THREE.SphereBufferGeometry(0.5, 16, 16),
-    new THREE.MeshBasicMaterial({ color: '#ff0000' })
+    new THREE.BoxBufferGeometry( 1, 1, 1 ),
+    new THREE.MeshStandardMaterial({ color: '#ff0000' })
 )
 object1.position.y = 0.5
 object1.name = '001'
@@ -220,9 +201,8 @@ scene.add(objectGroup)
 const clock = new THREE.Clock()
 let previousTime = 0
 
-
-const tick = () =>
-{
+tick()
+function tick(){
     var x = 0
     x = objectGroup.children.length 
     const elapsedTime = clock.getElapsedTime()
@@ -273,5 +253,3 @@ const tick = () =>
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
-
-tick()
