@@ -6,7 +6,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { TetrahedronGeometry } from 'three'
 
 //初始化对象
-var gui, canvas, fog, scene, plane, sizes, ambientLight, moonLight, renderer, controls, camera, raycaster
+var gui, canvas, fog, scene, plane, sizes, 
+    ambientLight, moonLight, renderer, 
+    controls, camera, raycaster
 
 init()
 function init(){
@@ -67,15 +69,13 @@ function init(){
 
     // Base camera
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
-    camera.position.x = 0
-    camera.position.y = .3
-    camera.position.z = 0
+    //摄像机位置x,z需要设置为0,否则主物体移动时会产生视角移动，因为camera的实际位置并未改变
+    camera.position.set(0,3,0)
     camera.lookAt( scene.position );
-    //scene.add(camera)
     
     // Controls
-    controls = new OrbitControls(camera, canvas)
-    controls.enableDamping = true
+    //controls = new OrbitControls(camera, canvas)
+    //controls.enableDamping = true
     //控制摄像机保持在水平面以上
     //controls.maxPolarAngle = Math.PI * 0.5 - 0.1
 
@@ -195,10 +195,9 @@ var temp = new THREE.Vector3;
 var dir = new THREE.Vector3;
 var a = new THREE.Vector3;
 var b = new THREE.Vector3;
-var goal = new THREE.Object3D;
 var follow = new THREE.Object3D;
 //摄像机与主物体的距离
-var coronaSafetyDistance = 3;
+var coronaSafetyDistance = 6;
 var velocity = 0.0;
 var speed = 0.0;
 
@@ -209,10 +208,10 @@ const testObject = new THREE.Mesh(
 testObject.position.y = 0.5
 testObject.name = '001'
 testObject.castShadow = true
-follow.position.z = -coronaSafetyDistance;
+follow.position.z = -coronaSafetyDistance
+follow.position.y = 3
 testObject.add( follow )
-// use goal to control the camera
-goal.add( camera )
+scene.add(camera)
 //主物体的起始位置
 testObject.rotateY(-2)
 objectGroup.add(testObject)
@@ -236,7 +235,7 @@ function tick(){
     previousTime = elapsedTime
     //初始化射线方向
     raycaster.setFromCamera(mouse, camera)
-    
+
     //很重要！！！！因为从gltf载入group需要时间，所以需要分情况来进行刷新帧率
     if (x < numberOfObjects){
         const objectsToTest = [  
@@ -275,30 +274,29 @@ function tick(){
         speed = 0.05;
     if(keys.s)
         speed = -0.05;
-    velocity += ( speed - velocity ) * .3;
-    //console.log(velocity)
-    testObject.translateZ( velocity );
+    velocity += (speed - velocity) * .3;
+    testObject.translateZ(velocity);
     if(keys.a)
         testObject.rotateY(0.05);
     if(keys.d)
         testObject.rotateY(-0.05);
     
-    //a是主物体的渐进物体，b是相机位置
+    //a是主物体的渐进物体，用来控制物体移动时镜头速度
     a.lerp(testObject.position, 0.4);
-    b.copy(goal.position);
+    b.copy(camera.position);
             
     dir.copy( a ).sub( b ).normalize();
-    //console.log(dir);
     const dis = a.distanceTo( b ) - coronaSafetyDistance;
-    goal.position.addScaledVector( dir, dis );
-    //镜头过度速度2
-    goal.position.lerp(temp, 0.051);
+    camera.position.addScaledVector( dir, dis );
+    
+    //物体不移动时，镜头速度
+    camera.position.lerp(temp, 0.04);
     temp.setFromMatrixPosition(follow.matrixWorld);
-    goal.position.y = 1
+
     camera.lookAt(testObject.position );
     
-    // Update controls
-    controls.update()
+    // Update controls 会与第三人称控制产生视角冲突
+    //controls.update()
     // Render
     renderer.render(scene, camera)
     // Call tick again on the next frame
