@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { TetrahedronGeometry } from 'three'
+import { LogLuvEncoding, TetrahedronGeometry } from 'three'
 
 //初始化对象
 var gui, canvas, fog, scene, plane, sizes, 
@@ -14,6 +14,7 @@ init()
 function init(){
     // Debug
     gui = new dat.GUI()
+    gui.close()
     // Canvas
     canvas = document.querySelector('canvas.webgl')
     //Fog
@@ -23,7 +24,7 @@ function init(){
     scene.fog = fog
     //Plane
     plane = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(100, 100),
+        new THREE.PlaneBufferGeometry(20, 20),
         new THREE.MeshStandardMaterial()  
     )
     //获取光影
@@ -70,8 +71,8 @@ function init(){
     // Base camera
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
     //摄像机位置x,z需要设置为0,否则主物体移动时会产生视角移动，因为camera的实际位置并未改变
-    camera.position.set(0,3,0)
-    camera.lookAt( scene.position );
+    camera.position.set(0,4,0)
+    //camera.lookAt( scene.position );
     
     // Controls
     //controls = new OrbitControls(camera, canvas)
@@ -93,7 +94,7 @@ const gltfLoader = new GLTFLoader()
 //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
 var modelsMessage = []
 var objectGroup = new THREE.Group()
-var numberOfObjects = 7
+var numberOfObjects = 8
 modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-3,0.5,-4)
 modelsMessage.push('/models/car/scene.gltf',1,1,1,0,0,-4)
 modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-5,2,2)
@@ -101,6 +102,8 @@ modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,-5,2,-1.5)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,-3,0.8,-2)
 modelsMessage.push('/models/test/untitled.gltf',0.3,0.3,0.3,0,1,5)
 
+plane.name = 'plane'
+objectGroup.add(plane)
 loadModels(modelsMessage)
 function loadModels(modelsMessage){
     const numbers  = modelsMessage.length/7
@@ -145,6 +148,37 @@ gltfLoader.load(
     }
 )
 
+//主物体
+var temp = new THREE.Vector3;
+var dir = new THREE.Vector3;
+var a = new THREE.Vector3;
+var b = new THREE.Vector3;
+var follow = new THREE.Object3D;
+//摄像机与主物体的距离
+var coronaSafetyDistance = 6;
+var velocity = 0.0;
+var speed = 0.0;
+
+const testObject = new THREE.Mesh(
+    new THREE.BoxBufferGeometry( 1, 1, 1 ),
+    new THREE.MeshStandardMaterial({ color: '#ff0000' })
+)
+testObject.position.y = 0.5
+testObject.name = '001'
+testObject.castShadow = true
+follow.position.z = -coronaSafetyDistance
+follow.position.y = 3
+testObject.add( follow )
+scene.add(camera)
+//主物体的起始位置
+testObject.rotateY(-2)
+objectGroup.add(testObject)
+objectGroup.name = 'papa'
+//异常重要,只有在场景加载后，才能在其他地方查到对象
+scene.add(objectGroup)
+
+
+
 //监听调整屏幕大小
 window.addEventListener('resize', () =>
 {
@@ -176,48 +210,93 @@ window.addEventListener( 'keyup', function(e) {
     if ( keys[ key ] !== undefined )
       keys[ key ] = false;
 });
+
 //监听鼠标移动
 const mouse = new THREE.Vector2()
 window.addEventListener('mousemove', (event) =>{ 
     mouse.x = event.clientX / sizes.width * 2 - 1
     mouse.y = - (event.clientY / sizes.height) * 2 + 1
   })
-  //监听鼠标点击
-window.addEventListener('click', () =>{
-     if(currentIntersect)
-     testObject.material.color.set(0xFFFFFF*Math.random());   
+
+//监听鼠标点击和类型
+var mouseSwitch = 0
+window.addEventListener('click', (event) =>{
+     if(currentIntersect){
+        if(currentIntersect.object.name != 'plane'){
+            testObject.material.color.set(0xFFFFFF*Math.random())
+        }
+    }
 })
- 
+//控制鼠标拖动
+window.addEventListener('mousedown',()=>{
+    mouseSwitch = 1
+})
+window.addEventListener('mouseup',()=>{
+    mouseSwitch = 0
+})
+
+//监听触摸屏幕
+window.addEventListener('touchend',()=>{
+    mouseSwitch = 0
+})
+window.addEventListener('touchmove',(event)=>{
+    mouseSwitch = 2
+    mouse.x = (event.touches[0].pageX/window.innerWidth)*2-1
+    mouse.y = -(event.touches[0].pageY/window.innerHeight)*2+1
+})
 
 
-//测试物体
-var temp = new THREE.Vector3;
-var dir = new THREE.Vector3;
-var a = new THREE.Vector3;
-var b = new THREE.Vector3;
-var follow = new THREE.Object3D;
-//摄像机与主物体的距离
-var coronaSafetyDistance = 6;
-var velocity = 0.0;
-var speed = 0.0;
-
-const testObject = new THREE.Mesh(
-    new THREE.BoxBufferGeometry( 1, 1, 1 ),
-    new THREE.MeshStandardMaterial({ color: '#ff0000' })
-)
-testObject.position.y = 0.5
-testObject.name = '001'
-testObject.castShadow = true
-follow.position.z = -coronaSafetyDistance
-follow.position.y = 3
-testObject.add( follow )
-scene.add(camera)
-//主物体的起始位置
-testObject.rotateY(-2)
-objectGroup.add(testObject)
-objectGroup.name = 'papa'
-//异常重要,只有在场景加载后，才能在其他地方查到对象
-scene.add(objectGroup)
+//控制主物体移动
+function objectMove(){
+    //第三人称控制移动，相机距离位置很重要
+    speed = 0.0
+    //鼠标控制,mouse.y需要进行俯仰角修正
+    if(mouseSwitch == 1){
+        if(mouse.y + 0.3 > 0 )
+        speed = 0.2 * Math.abs(mouse.y + 0.3);
+        if(mouse.y + 0.3 < 0 )
+        speed = -0.2 * Math.abs(mouse.y + 0.3);
+        if(mouse.x < 0 )
+        testObject.rotateY(0.05 * Math.abs(mouse.x));
+        if(mouse.x > 0 )
+        testObject.rotateY(-0.05 * Math.abs(mouse.x));
+    }
+    //触控屏幕控制
+    if(mouseSwitch == 2){
+        if(mouse.y + 0.3 > 0 )
+        speed = 0.5 * Math.abs(mouse.y + 0.3);
+        if(mouse.y + 0.3 < 0 )
+        speed = -0.5 * Math.abs(mouse.y + 0.3);
+        if(mouse.x < 0 )
+        testObject.rotateY(0.17 * Math.abs(mouse.x));
+        if(mouse.x > 0 )
+        testObject.rotateY(-0.17 * Math.abs(mouse.x));
+    }
+    //键盘控制
+    if(keys.w )
+        speed = 0.05;
+    if(keys.s )
+        speed = -0.05;
+    velocity += (speed - velocity) * .3;
+    testObject.translateZ(velocity);
+    if(keys.a )
+        testObject.rotateY(0.05);
+    if(keys.d )
+        testObject.rotateY(-0.05);
+    //a是主物体的渐进物体，用来控制物体移动时镜头速度
+    a.lerp(testObject.position, 0.8);
+    b.copy(camera.position);
+    dir.copy( a ).sub( b ).normalize();
+    const dis = a.distanceTo( b ) - coronaSafetyDistance;
+    camera.position.addScaledVector( dir, dis );
+    
+    //物体不移动时，镜头速度
+    camera.position.lerp(temp, 0.1);
+    temp.setFromMatrixPosition(follow.matrixWorld);
+    //镜头观察角度提高
+    b.copy(testObject.position)
+    camera.lookAt(b.setY(2));
+}
 
 /**
  * Animate
@@ -226,8 +305,8 @@ const clock = new THREE.Clock()
 let previousTime = 0
 let currentIntersect = null
 
-tick()
-function tick(){
+animate()
+function animate(){
     var x = 0
     x = objectGroup.children.length 
     const elapsedTime = clock.getElapsedTime()
@@ -251,11 +330,11 @@ function tick(){
             objectGroup.getObjectByName('11002'),
             objectGroup.getObjectByName('11003'),
             objectGroup.getObjectByName('11004'),
-            objectGroup.getObjectByName('11005')
+            objectGroup.getObjectByName('11005'),
+            objectGroup.getObjectByName('plane')
         ]
         var intersects = raycaster.intersectObjects(objectsToTest, true)
     }
-    
     //存放相交的第一个物体
     if(intersects.length)
         currentIntersect = intersects[0];
@@ -265,40 +344,14 @@ function tick(){
     // Model animation
     if(mixer)
         mixer.update(deltaTime);
-
-
-    //第三人称控制移动，相机距离位置很重要
-    speed = 0.0
-
-    if(keys.w)
-        speed = 0.05;
-    if(keys.s)
-        speed = -0.05;
-    velocity += (speed - velocity) * .3;
-    testObject.translateZ(velocity);
-    if(keys.a)
-        testObject.rotateY(0.05);
-    if(keys.d)
-        testObject.rotateY(-0.05);
     
-    //a是主物体的渐进物体，用来控制物体移动时镜头速度
-    a.lerp(testObject.position, 0.4);
-    b.copy(camera.position);
-            
-    dir.copy( a ).sub( b ).normalize();
-    const dis = a.distanceTo( b ) - coronaSafetyDistance;
-    camera.position.addScaledVector( dir, dis );
-    
-    //物体不移动时，镜头速度
-    camera.position.lerp(temp, 0.04);
-    temp.setFromMatrixPosition(follow.matrixWorld);
-
-    camera.lookAt(testObject.position );
+    //控制主物体移动
+    objectMove()
     
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
     // Render
     renderer.render(scene, camera)
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
+    // Call animate again on the next frame
+    window.requestAnimationFrame(animate)
 }
