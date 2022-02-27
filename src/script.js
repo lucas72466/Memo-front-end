@@ -253,24 +253,24 @@ function objectMove(){
     //鼠标控制,mouse.y需要进行俯仰角修正
     if(mouseSwitch == 1){
         if(mouse.y + 0.3 > 0 )
-        speed = 0.2 * Math.abs(mouse.y + 0.3);
-        if(mouse.y + 0.3 < 0 )
-        speed = -0.2 * Math.abs(mouse.y + 0.3);
+        speed = 0.3 * Math.abs(mouse.y + 0.3);
+        //if(mouse.y + 0.3 < 0 )
+        //speed = -0.2 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
-        testObject.rotateY(0.05 * Math.abs(mouse.x));
+        testObject.rotateY(0.05 * Math.abs(mouse.x)+0.01);
         if(mouse.x > 0 )
-        testObject.rotateY(-0.05 * Math.abs(mouse.x));
+        testObject.rotateY(-0.05 * Math.abs(mouse.x)-0.01);
     }
     //触控屏幕控制
     if(mouseSwitch == 2){
         if(mouse.y + 0.3 > 0 )
         speed = 0.5 * Math.abs(mouse.y + 0.3);
-        if(mouse.y + 0.3 < 0 )
-        speed = -0.5 * Math.abs(mouse.y + 0.3);
+        //if(mouse.y + 0.3 < 0 )
+        //speed = -0.5 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
-        testObject.rotateY(0.17 * Math.abs(mouse.x));
+        testObject.rotateY(0.17 * Math.abs(mouse.x)+0.03);
         if(mouse.x > 0 )
-        testObject.rotateY(-0.17 * Math.abs(mouse.x));
+        testObject.rotateY(-0.17 * Math.abs(mouse.x)-0.03);
     }
     //键盘控制
     if(keys.w )
