@@ -211,24 +211,21 @@ window.addEventListener( 'keyup', function(e) {
       keys[ key ] = false;
 });
 
-//监听鼠标移动
+//监听鼠标移动, 定位鼠标
 const mouse = new THREE.Vector2()
 window.addEventListener('mousemove', (event) =>{ 
     mouse.x = event.clientX / sizes.width * 2 - 1
     mouse.y = - (event.clientY / sizes.height) * 2 + 1
   })
 
-//监听鼠标点击和类型
+
 var mouseSwitch = 0
-window.addEventListener('click', (event) =>{
-     if(currentIntersect){
-        if(currentIntersect.object.name != 'plane'){
-            testObject.material.color.set(0xFFFFFF*Math.random())
-        }
-    }
-})
-//控制鼠标拖动
+//监听鼠标拖动和点击事件
 window.addEventListener('mousedown',()=>{
+    if(currentIntersect && currentIntersect.object.name != 'plane'){
+        testObject.material.color.set(0xFFFFFF*Math.random())
+    }
+    else
     mouseSwitch = 1
 })
 window.addEventListener('mouseup',()=>{
@@ -251,15 +248,15 @@ function objectMove(){
     //第三人称控制移动，相机距离位置很重要
     speed = 0.0
     //鼠标控制,mouse.y需要进行俯仰角修正
-    if(mouseSwitch == 1){
+    if((mouseSwitch == 1) && (mouseSwitch != 3)){
         if(mouse.y + 0.3 > 0 )
         speed = 0.3 * Math.abs(mouse.y + 0.3);
         //if(mouse.y + 0.3 < 0 )
         //speed = -0.2 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
-        testObject.rotateY(0.05 * Math.abs(mouse.x)+0.01);
+        testObject.rotateY(0.03 * Math.abs(mouse.x)+0.01);
         if(mouse.x > 0 )
-        testObject.rotateY(-0.05 * Math.abs(mouse.x)-0.01);
+        testObject.rotateY(-0.03 * Math.abs(mouse.x)-0.01);
     }
     //触控屏幕控制
     if(mouseSwitch == 2){
