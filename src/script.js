@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { LogLuvEncoding, TetrahedronGeometry } from 'three'
+import { onIntersect } from './collision'
 
 //初始化对象
 var gui, canvas, fog, scene, plane, sizes, 
@@ -177,71 +178,67 @@ objectGroup.name = 'papa'
 //异常重要,只有在场景加载后，才能在其他地方查到对象
 scene.add(objectGroup)
 
-
-
-//监听调整屏幕大小
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-//监听键盘输入
-const keys = {
-    a: false,
-    s: false,
-    d: false,
-    w: false
-  };
-window.addEventListener( 'keydown', function(e) {
-    const key = e.code.replace('Key', '').toLowerCase();
-    if ( keys[ key ] !== undefined )
-      keys[ key ] = true; 
-});
-window.addEventListener( 'keyup', function(e) {
-    const key = e.code.replace('Key', '').toLowerCase();
-    if ( keys[ key ] !== undefined )
-      keys[ key ] = false;
-});
-
-//监听鼠标移动, 定位鼠标
+//监听屏幕变化
 const mouse = new THREE.Vector2()
-window.addEventListener('mousemove', (event) =>{ 
-    mouse.x = event.clientX / sizes.width * 2 - 1
-    mouse.y = - (event.clientY / sizes.height) * 2 + 1
-  })
-
-
 var mouseSwitch = 0
-//监听鼠标拖动和点击事件
-window.addEventListener('mousedown',()=>{
-    if(currentIntersect && currentIntersect.object.name != 'plane'){
-        testObject.material.color.set(0xFFFFFF*Math.random())
-    }
-    else
-    mouseSwitch = 1
+const keys = {a: false,s: false,d: false,w: false};
+//只需要调用一次，在刷新里不需要调用
+windowChange()
+function windowChange(){
+    //监听调整屏幕大小
+    window.addEventListener('resize', () =>{
+        // Update sizes
+        sizes.width = window.innerWidth
+        sizes.height = window.innerHeight
+        // Update camera
+        camera.aspect = sizes.width / sizes.height
+        camera.updateProjectionMatrix()
+        // Update renderer
+        renderer.setSize(sizes.width, sizes.height)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
-window.addEventListener('mouseup',()=>{
-    mouseSwitch = 0
-})
+    
+    //监听键盘输入
+    window.addEventListener( 'keydown', function(e) {
+        const key = e.code.replace('Key', '').toLowerCase();
+        if ( keys[ key ] !== undefined )
+        keys[ key ] = true; 
+    });
+    window.addEventListener( 'keyup', function(e) {
+        const key = e.code.replace('Key', '').toLowerCase();
+        if ( keys[ key ] !== undefined )
+        keys[ key ] = false;
+    });
 
-//监听触摸屏幕
-window.addEventListener('touchend',()=>{
-    mouseSwitch = 0
-})
-window.addEventListener('touchmove',(event)=>{
-    mouseSwitch = 2
-    mouse.x = (event.touches[0].pageX/window.innerWidth)*2-1
-    mouse.y = -(event.touches[0].pageY/window.innerHeight)*2+1
-})
+    //监听鼠标移动, 定位鼠标
+    window.addEventListener('mousemove', (event) =>{ 
+        mouse.x = event.clientX / sizes.width * 2 - 1
+        mouse.y = - (event.clientY / sizes.height) * 2 + 1
+    })
 
+
+    //监听鼠标拖动和点击事件
+    window.addEventListener('mousedown',()=>{
+        if(currentIntersect && currentIntersect.object.name != 'plane'){
+            testObject.material.color.set(0xFFFFFF*Math.random())
+        }
+        else
+        mouseSwitch = 1
+    })
+    window.addEventListener('mouseup',()=>{
+        mouseSwitch = 0
+    })
+
+    //监听触摸屏幕
+    window.addEventListener('touchend',()=>{
+        mouseSwitch = 0
+    })
+    window.addEventListener('touchmove',(event)=>{
+        mouseSwitch = 2
+        mouse.x = (event.touches[0].pageX/window.innerWidth)*2-1
+        mouse.y = -(event.touches[0].pageY/window.innerHeight)*2+1
+    })
+}
 
 //控制主物体移动
 function objectMove(){
@@ -250,7 +247,7 @@ function objectMove(){
     //鼠标控制,mouse.y需要进行俯仰角修正
     if((mouseSwitch == 1) && (mouseSwitch != 3)){
         if(mouse.y + 0.3 > 0 )
-        speed = 0.3 * Math.abs(mouse.y + 0.3);
+        speed = 0.1 * Math.abs(mouse.y + 0.3) * moveDirection
         //if(mouse.y + 0.3 < 0 )
         //speed = -0.2 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
@@ -261,19 +258,19 @@ function objectMove(){
     //触控屏幕控制
     if(mouseSwitch == 2){
         if(mouse.y + 0.3 > 0 )
-        speed = 0.5 * Math.abs(mouse.y + 0.3);
+        speed = 0.5 * Math.abs(mouse.y + 0.3)  * moveDirection
         //if(mouse.y + 0.3 < 0 )
         //speed = -0.5 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
-        testObject.rotateY(0.17 * Math.abs(mouse.x)+0.03);
+        testObject.rotateY(0.1 * Math.abs(mouse.x)+0.03);
         if(mouse.x > 0 )
-        testObject.rotateY(-0.17 * Math.abs(mouse.x)-0.03);
+        testObject.rotateY(-0.1 * Math.abs(mouse.x)-0.03);
     }
     //键盘控制
     if(keys.w )
-        speed = 0.05;
+        speed = 0.05 * moveDirection
     if(keys.s )
-        speed = -0.05;
+        speed = -0.05 
     velocity += (speed - velocity) * .3;
     testObject.translateZ(velocity);
     if(keys.a )
@@ -288,19 +285,19 @@ function objectMove(){
     camera.position.addScaledVector( dir, dis );
     
     //物体不移动时，镜头速度
-    camera.position.lerp(temp, 0.1);
+    camera.position.lerp(temp, 0.07);
     temp.setFromMatrixPosition(follow.matrixWorld);
     //镜头观察角度提高
     b.copy(testObject.position)
     camera.lookAt(b.setY(2));
 }
 
-/**
- * Animate
- */
+//刷新屏幕动画
 const clock = new THREE.Clock()
 let previousTime = 0
 let currentIntersect = null
+var objectsToTest = null
+var moveDirection = 1
 
 animate()
 function animate(){
@@ -314,13 +311,13 @@ function animate(){
 
     //很重要！！！！因为从gltf载入group需要时间，所以需要分情况来进行刷新帧率
     if (x < numberOfObjects){
-        const objectsToTest = [  
+         objectsToTest = [  
             objectGroup.getObjectByName('001'),        
         ]
         var intersects = raycaster.intersectObjects(objectsToTest, true)
 
     }else if(x = numberOfObjects){
-        const objectsToTest = [
+         objectsToTest = [
             objectGroup.getObjectByName('001'),
             objectGroup.getObjectByName('11000'),
             objectGroup.getObjectByName('11001'),
@@ -328,10 +325,11 @@ function animate(){
             objectGroup.getObjectByName('11003'),
             objectGroup.getObjectByName('11004'),
             objectGroup.getObjectByName('11005'),
-            objectGroup.getObjectByName('plane')
+            //objectGroup.getObjectByName('plane')
         ]
         var intersects = raycaster.intersectObjects(objectsToTest, true)
     }
+
     //存放相交的第一个物体
     if(intersects.length)
         currentIntersect = intersects[0];
@@ -342,8 +340,14 @@ function animate(){
     if(mixer)
         mixer.update(deltaTime);
     
-    //控制主物体移动
+    //检测是否产生碰撞，并且以此来控制物体的移动方向
+    if(!onIntersect(testObject, objectsToTest)){
+        moveDirection = 1
+    }else{
+        moveDirection = -1
+    }
     objectMove()
+
     
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
