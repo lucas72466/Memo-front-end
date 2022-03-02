@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { LogLuvEncoding, TetrahedronGeometry } from 'three'
-import { onIntersect } from './collision'
 
 //初始化对象
 var gui, canvas, fog, scene, plane, sizes, 
@@ -22,7 +21,7 @@ function init(){
     fog = new THREE.Fog("rgb(135,206,250)", 0.1, 40)
     // Scene
     scene = new THREE.Scene()
-    scene.fog = fog
+    //scene.fog = fog
     //Plane
     plane = new THREE.Mesh(
         new THREE.PlaneBufferGeometry(20, 20),
@@ -44,15 +43,17 @@ function init(){
     scene.add(ambientLight)
 
     // Directional light
-    moonLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-    moonLight.position.set(4, 5, - 2)
+    moonLight = new THREE.DirectionalLight("rgb(255,255,255)", 1)
+    moonLight.position.set(20, 20, 20)
     gui.add(moonLight, 'intensity').min(0).max(1).step(0.001)
-    gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
-    gui.add(moonLight.position, 'y').min(- 5).max(5).step(0.001)
-    gui.add(moonLight.position, 'z').min(- 5).max(5).step(0.001)
+    gui.add(moonLight.position, 'x').min(-50).max(50).step(1)
+    gui.add(moonLight.position, 'y').min(- 50).max(50).step(1)
+    gui.add(moonLight.position, 'z').min(- 50).max(50).step(1)
     moonLight.castShadow = true
+    //moonLight.shadow.camera = new THREE.OrthographicCamera( -100, 100, 100, -100, 0.5, 1000 ); 
     scene.add(moonLight)
-
+    const helper = new THREE.DirectionalLightHelper( moonLight, 5 );
+    scene.add( helper );
     //渲染器
     renderer = new THREE.WebGLRenderer({
         canvas: canvas
@@ -75,11 +76,11 @@ function init(){
     camera.position.set(0,4,0)
     //camera.lookAt( scene.position );
     
-    // Controls
-    //controls = new OrbitControls(camera, canvas)
-    //controls.enableDamping = true
-    //控制摄像机保持在水平面以上
-    //controls.maxPolarAngle = Math.PI * 0.5 - 0.1
+    //Controls
+    // controls = new OrbitControls(camera, canvas)
+    // controls.enableDamping = true
+    // 控制摄像机保持在水平面以上
+    // controls.maxPolarAngle = Math.PI * 0.5 - 0.1
 
     raycaster = new THREE.Raycaster()
     let currentIntersect = null
@@ -97,7 +98,7 @@ var modelsMessage = []
 var objectGroup = new THREE.Group()
 var numberOfObjects = 8
 modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-3,0.5,-4)
-modelsMessage.push('/models/car/scene.gltf',1,1,1,0,0,-4)
+modelsMessage.push('/models/test/square_2.glb',3,3,3,0,0,-50)
 modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-5,2,2)
 modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,-5,2,-1.5)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,-3,0.8,-2)
@@ -125,7 +126,10 @@ function loadModels(modelsMessage){
                 gltf.scene.name = x/7 + 11000 + ''
                 //只能为mesh对象添加阴影，将gltf再展开一层
                 gltf.scene.traverse( function( node ) {
-                    if ( node.isMesh ) { node.castShadow = true; }  
+                    if ( node.isMesh ){ 
+                        node.castShadow = true
+                        node.receiveShadow = true
+                    }  
                 } );
                 objectGroup.add(gltf.scene)             
             }
@@ -161,7 +165,7 @@ var velocity = 0.0;
 var speed = 0.0;
 
 const testObject = new THREE.Mesh(
-    new THREE.BoxBufferGeometry( 1, 1, 1 ),
+    new THREE.BoxBufferGeometry( 1, 1, 1),
     new THREE.MeshStandardMaterial({ color: '#ff0000' })
 )
 testObject.position.y = 0.5
@@ -172,7 +176,7 @@ follow.position.y = 3
 testObject.add( follow )
 scene.add(camera)
 //主物体的起始位置
-testObject.rotateY(-2)
+//testObject.rotateY(-2)
 objectGroup.add(testObject)
 objectGroup.name = 'papa'
 //异常重要,只有在场景加载后，才能在其他地方查到对象
@@ -240,16 +244,57 @@ function windowChange(){
     })
 }
 
-//控制主物体移动
+//检测碰撞,索引是前后左右上下
+var contactSurface = null
+var contactSurfaceDistance = null
+var intersectsWithObject = null
+function onIntersect(){
+    // 物体中心点坐标
+    const centerCoord = testObject.position.clone()
+    // 顶点三维向量
+    const vertices = []
+    //顺序是前后左右上下, temp是碰撞距离检测
+    const temp =  0.8
+    vertices.push(new THREE.Vector3(0, 0,  temp)),
+    vertices.push(new THREE.Vector3(0, 0, -temp)),
+    vertices.push(new THREE.Vector3( temp, 0, 0)),
+    vertices.push(new THREE.Vector3(-temp, 0, 0)),
+    vertices.push(new THREE.Vector3(0,  temp, 0)),
+    vertices.push(new THREE.Vector3(0, -temp, 0)),
+    //左前右前，左后右后
+    vertices.push(new THREE.Vector3( temp, 0, temp)),
+    vertices.push(new THREE.Vector3(-temp, 0, temp)),
+    vertices.push(new THREE.Vector3(temp, 0, -temp)),
+    vertices.push(new THREE.Vector3(-temp, 0, -temp))
+    for (let i = 0; i < vertices.length; i++) {
+      // 获取世界坐标下 网格变换后的坐标
+      let vertexWorldCoord = vertices[i].clone().applyMatrix4(testObject.matrixWorld)
+      // 获得由中心指向顶点的向量
+      var dir = vertexWorldCoord.clone().sub(centerCoord)
+      // 发射光线 centerCoord 为投射的原点向量  dir 向射线提供方向的方向向量
+      let raycaster = new THREE.Raycaster(centerCoord, dir.clone().normalize())
+      // 放入要检测的 物体cube2，返回相交物体
+      intersectsWithObject = raycaster.intersectObjects(objectsToTest, true)
+      // 检测是哪个面发生了碰撞
+      if (intersectsWithObject.length > 0) {
+        if (intersectsWithObject[0].distance < dir.length()) {
+            contactSurface = i
+            contactSurfaceDistance = intersectsWithObject[0].distance
+        }
+      }
+    }
+  }
+
+//控制主物体移动，让太阳光跟随移动刷新以节约性能
 function objectMove(){
     //第三人称控制移动，相机距离位置很重要
     speed = 0.0
     //鼠标控制,mouse.y需要进行俯仰角修正
     if((mouseSwitch == 1) && (mouseSwitch != 3)){
-        if(mouse.y + 0.3 > 0 )
-        speed = 0.1 * Math.abs(mouse.y + 0.3) * moveDirection
-        //if(mouse.y + 0.3 < 0 )
-        //speed = -0.2 * Math.abs(mouse.y + 0.3);
+        if(mouse.y + 0.3 > 0 && contactSurface != 0 && contactSurface != 7 && contactSurface != 6)
+        speed = 0.1 * Math.abs(mouse.y + 0.3) 
+        if(mouse.y + 0.3 < 0 && contactSurface != 1 && contactSurface != 8 && contactSurface != 9)
+        speed = -0.01 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
         testObject.rotateY(0.03 * Math.abs(mouse.x)+0.01);
         if(mouse.x > 0 )
@@ -257,35 +302,42 @@ function objectMove(){
     }
     //触控屏幕控制
     if(mouseSwitch == 2){
-        if(mouse.y + 0.3 > 0 )
-        speed = 0.5 * Math.abs(mouse.y + 0.3)  * moveDirection
-        //if(mouse.y + 0.3 < 0 )
-        //speed = -0.5 * Math.abs(mouse.y + 0.3);
+        if(mouse.y + 0.3 > 0 && contactSurface != 0 && contactSurface != 7 && contactSurface != 6)
+        speed = 0.5 * Math.abs(mouse.y + 0.3)  
+        if(mouse.y + 0.3 < 0 && contactSurface != 1 && contactSurface != 8 && contactSurface != 9)
+        speed = -0.1 * Math.abs(mouse.y + 0.3);
         if(mouse.x < 0 )
         testObject.rotateY(0.1 * Math.abs(mouse.x)+0.03);
         if(mouse.x > 0 )
         testObject.rotateY(-0.1 * Math.abs(mouse.x)-0.03);
     }
     //键盘控制
-    if(keys.w )
-        speed = 0.05 * moveDirection
-    if(keys.s )
-        speed = -0.05 
+    if(keys.w && contactSurface != 0 && contactSurface != 7 && contactSurface != 6)
+        speed = 0.05
+    if(keys.s && contactSurface != 1 && contactSurface != 8 && contactSurface != 9)
+        speed = -0.05
     velocity += (speed - velocity) * .3;
     testObject.translateZ(velocity);
-    if(keys.a )
+    console.log(moonLight.position);
+    if(keys.a && contactSurface != 2)
         testObject.rotateY(0.05);
-    if(keys.d )
+    if(keys.d && contactSurface != 3)
         testObject.rotateY(-0.05);
+    
+    //上斜面!!!!!!!!!!
+    if(contactSurface == 5){
+        testObject.position.y = (0.5-contactSurfaceDistance) + testObject.position.y
+    }
+
     //a是主物体的渐进物体，用来控制物体移动时镜头速度
-    a.lerp(testObject.position, 0.8);
+    a.lerp(testObject.position, 0.3);
     b.copy(camera.position);
     dir.copy( a ).sub( b ).normalize();
     const dis = a.distanceTo( b ) - coronaSafetyDistance;
     camera.position.addScaledVector( dir, dis );
     
     //物体不移动时，镜头速度
-    camera.position.lerp(temp, 0.07);
+    camera.position.lerp(temp, 0.02);
     temp.setFromMatrixPosition(follow.matrixWorld);
     //镜头观察角度提高
     b.copy(testObject.position)
@@ -297,7 +349,6 @@ const clock = new THREE.Clock()
 let previousTime = 0
 let currentIntersect = null
 var objectsToTest = null
-var moveDirection = 1
 
 animate()
 function animate(){
@@ -324,15 +375,17 @@ function animate(){
             objectGroup.getObjectByName('11002'),
             objectGroup.getObjectByName('11003'),
             objectGroup.getObjectByName('11004'),
-            objectGroup.getObjectByName('11005'),
+            //objectGroup.getObjectByName('11005'),
             //objectGroup.getObjectByName('plane')
         ]
         var intersects = raycaster.intersectObjects(objectsToTest, true)
     }
 
     //存放相交的第一个物体
-    if(intersects.length)
+    if(intersects.length){
+        if(intersects[0].distance <= 10 && intersects[0].distance >= 2)
         currentIntersect = intersects[0];
+    }
     else
         currentIntersect = null;
     
@@ -341,14 +394,10 @@ function animate(){
         mixer.update(deltaTime);
     
     //检测是否产生碰撞，并且以此来控制物体的移动方向
-    if(!onIntersect(testObject, objectsToTest)){
-        moveDirection = 1
-    }else{
-        moveDirection = -1
-    }
+    onIntersect()
     objectMove()
-
-    
+    contactSurface = null
+  
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
     // Render
