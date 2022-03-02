@@ -21,7 +21,8 @@ function init(){
     fog = new THREE.Fog("rgb(135,206,250)", 0.1, 40)
     // Scene
     scene = new THREE.Scene()
-    //scene.fog = fog
+    scene.fog = fog
+    
     //Plane
     plane = new THREE.Mesh(
         new THREE.PlaneBufferGeometry(20, 20),
@@ -31,7 +32,7 @@ function init(){
     plane.receiveShadow = true
     plane.rotation.x = - Math.PI * 0.5
     plane.position.y = 0
-    scene.add(plane)
+    //scene.add(plane)
     //页面大小
     sizes = {
         width: window.innerWidth,
@@ -50,10 +51,9 @@ function init(){
     gui.add(moonLight.position, 'y').min(- 50).max(50).step(1)
     gui.add(moonLight.position, 'z').min(- 50).max(50).step(1)
     moonLight.castShadow = true
-    //moonLight.shadow.camera = new THREE.OrthographicCamera( -100, 100, 100, -100, 0.5, 1000 ); 
+    moonLight.shadow.camera = new THREE.OrthographicCamera( -20, 20, 20, -20, 0.5, 200 ); 
     scene.add(moonLight)
-    const helper = new THREE.DirectionalLightHelper( moonLight, 5 );
-    scene.add( helper );
+    
     //渲染器
     renderer = new THREE.WebGLRenderer({
         canvas: canvas
@@ -96,7 +96,7 @@ const gltfLoader = new GLTFLoader()
 //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
 var modelsMessage = []
 var objectGroup = new THREE.Group()
-var numberOfObjects = 8
+var numberOfObjects = 7
 modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-3,0.5,-4)
 modelsMessage.push('/models/test/square_2.glb',3,3,3,0,0,-50)
 modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-5,2,2)
@@ -105,7 +105,7 @@ modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,-3,0.8,-2)
 modelsMessage.push('/models/test/untitled.gltf',0.3,0.3,0.3,0,1,5)
 
 plane.name = 'plane'
-objectGroup.add(plane)
+//objectGroup.add(plane)
 loadModels(modelsMessage)
 function loadModels(modelsMessage){
     const numbers  = modelsMessage.length/7
@@ -285,8 +285,11 @@ function onIntersect(){
     }
   }
 
+
 //控制主物体移动，让太阳光跟随移动刷新以节约性能
 function objectMove(){
+    //每次移动开始时取一次固定的光照位置值
+    moonLight.position.set(20,20,20)
     //第三人称控制移动，相机距离位置很重要
     speed = 0.0
     //鼠标控制,mouse.y需要进行俯仰角修正
@@ -318,7 +321,7 @@ function objectMove(){
         speed = -0.05
     velocity += (speed - velocity) * .3;
     testObject.translateZ(velocity);
-    console.log(moonLight.position);
+
     if(keys.a && contactSurface != 2)
         testObject.rotateY(0.05);
     if(keys.d && contactSurface != 3)
@@ -335,7 +338,11 @@ function objectMove(){
     dir.copy( a ).sub( b ).normalize();
     const dis = a.distanceTo( b ) - coronaSafetyDistance;
     camera.position.addScaledVector( dir, dis );
-    
+
+    //使用物体位置来改变灯光位置
+    moonLight.position.add(testObject.position)
+    moonLight.target = testObject
+   
     //物体不移动时，镜头速度
     camera.position.lerp(temp, 0.02);
     temp.setFromMatrixPosition(follow.matrixWorld);
