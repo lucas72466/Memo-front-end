@@ -1,4 +1,26 @@
 //暂时用不到的一部分代码放在这里
+
+//加载有动画效果的gltf文件
+let mixer = null
+gltfLoader.load(
+    '/models/Fox/glTF/Fox.gltf',
+    (gltf) =>
+    {   
+        gltf.scene.scale.set(0.025, 0.025, 0.025)
+        gltf.scene.position.set(3,0,-3)
+        //Animation
+        mixer = new THREE.AnimationMixer(gltf.scene)
+        const action = mixer.clipAction(gltf.animations[2])
+        action.play()
+        scene.add(gltf.scene)
+    }
+)
+
+
+
+
+
+
 /**
  * Textures
  */
