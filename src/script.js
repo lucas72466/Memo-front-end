@@ -218,7 +218,9 @@ function windowChange(){
 
 
 //检测碰撞,索引是前前后后上下
-var intersectSurface = null
+var intersectSurfaceBottom = null
+var intersectSurfaceFront = null
+var intersectSurfaceBack = null
 var intersectSurfaceDistance = null
 var intersectsWithObject = null
 function onIntersect(){
@@ -233,11 +235,12 @@ function onIntersect(){
     vertices.push(new THREE.Vector3(-temp, temp,  temp))
     vertices.push(new THREE.Vector3(-temp, temp, -temp))
     vertices.push(new THREE.Vector3( temp, temp, -temp))
-    vertices.push(new THREE.Vector3(0,  temp, 0))
+    vertices.push(new THREE.Vector3(0, 0,  temp))
     vertices.push(new THREE.Vector3(0, -temp, 0))
+    vertices.push(new THREE.Vector3(0, 0, -temp))
     
-    //先创建上下两条检测线
-    for (let i = 4; i < 6; i++) {
+    //先创建前和下两条检测线
+    for (let i = 4; i < 7; i++) {
       // 获取世界坐标下的检测点坐标
       let vertexWorldCoord = vertices[i].clone().applyMatrix4(mainObject.matrixWorld)
       // 获得由中心指向顶点的向量
@@ -249,8 +252,14 @@ function onIntersect(){
       // 检测是哪个面发生了碰撞
       if (intersectsWithObject.length > 0) {
         if (intersectsWithObject[0].distance < temp) {
-            intersectSurface = i
-            intersectSurfaceDistance = intersectsWithObject[0].distance
+            if(i == 5){
+                intersectSurfaceBottom = 1
+                intersectSurfaceDistance = intersectsWithObject[0].distance
+            }else if(i == 4 ){
+                intersectSurfaceFront = 1
+            }else if(i == 6){
+                intersectSurfaceBack = 1
+            }
         }
       }
     }
@@ -275,7 +284,11 @@ function onIntersect(){
         // 检测是哪个面发生了碰撞 0，1是前面 2，3是后面
         if (intersectsWithObject.length > 0) {
           if (intersectsWithObject[0].distance < (temp*2) ) {
-              intersectSurface = i
+              if(i == 0 | i == 1){
+                  intersectSurfaceFront = 1
+              }else{
+                  intersectSurfaceBack = 1
+              }
           }
         }
       }
@@ -317,20 +330,20 @@ function objectMove(){
         mainObject.rotateY(-0.001 * Math.abs(mouse.x)-0.03);
     }
     //键盘控制
-    if(keys.w && intersectSurface != 0 && intersectSurface != 1)
-        speed = 0.03
-    if(keys.s && intersectSurface != 2 && intersectSurface != 3)
-        speed = -0.03
+    if(keys.w && intersectSurfaceFront != 1)
+        speed = 0.05
+    if(keys.s && intersectSurfaceBack != 1)
+        speed = -0.05
     velocity += (speed - velocity) * .3;
-    mainObject.translateZ(velocity);
+    mainObject.translateZ(speed);
 
     if(keys.a )
-        mainObject.rotateY(0.05);
+        mainObject.rotateY(0.03);
     if(keys.d )
-        mainObject.rotateY(-0.05);
+        mainObject.rotateY(-0.03);
     
     //上斜面!!!!!!!!!!
-    if(intersectSurface == 5){
+    if(intersectSurfaceBottom == 1){
         mainObject.position.y = (0.5-intersectSurfaceDistance) + mainObject.position.y
     }
 
@@ -361,6 +374,9 @@ let currentIntersect = null
 var objectsToTest = null
 animate()
 function animate(){
+    intersectSurfaceBack = 0
+    intersectSurfaceBottom = 0
+    intersectSurfaceFront = 0
     var x = 0
     x = modelsGroup.children.length 
     const elapsedTime = clock.getElapsedTime()
@@ -404,7 +420,6 @@ function animate(){
     //检测是否产生碰撞，并且以此来控制物体的移动方向
     onIntersect()
     objectMove()
-    intersectSurface = null
   
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
