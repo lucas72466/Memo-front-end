@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'dat.gui'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { LogLuvEncoding, TetrahedronGeometry } from 'three'
+import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry } from 'three'
 
 //初始化对象
 var gui, canvas, fog, scene, sizes, 
@@ -156,6 +156,7 @@ modelsGroup.add(mainObject)
 
 //监听屏幕变化
 const mouse = new THREE.Vector2()
+//2是触摸屏事件，5是点击移动事件
 var mouseSwitch = 0
 const keys = {a: false,s: false,d: false,w: false};
 //只需要调用一次，在刷新里不需要调用
@@ -192,11 +193,13 @@ function windowChange(){
         mouse.y = - (event.clientY / sizes.height) * 2 + 1
     })
 
-
     //监听鼠标拖动和点击事件
-    window.addEventListener('mousedown',()=>{
-        if(currentIntersect && currentIntersect.object.name != 'plane'){
+    window.addEventListener('mousedown',(event)=>{
+        if(currentIntersect){
+            //随机改变主物体颜色
             mainObject.material.color.set(0xFFFFFF*Math.random())
+            mouseSwitch = 5
+            currentIntersect =null
         }
         else
         mouseSwitch = 1
@@ -217,7 +220,7 @@ function windowChange(){
 }
 
 
-//检测碰撞,索引是前前后后上下
+//检测碰撞
 var intersectSurfaceBottom = null
 var intersectSurfaceFront = null
 var intersectSurfaceBack = null
@@ -296,10 +299,15 @@ function onIntersect(){
 
 
 //控制主物体移动，让太阳光跟随移动刷新以节约性能
-var temp = new THREE.Vector3;
+var temp0 = new THREE.Vector3;
 var dir = new THREE.Vector3;
-var a = new THREE.Vector3;
-var b = new THREE.Vector3;
+var temp1 = new THREE.Vector3;
+var temp2 = new THREE.Vector3;
+//鼠标点击事件持续运行
+var continueMove = 0
+var angle = null
+var angleDirection = 1
+var distance = null
 var velocity = 0.0;
 var speed = 0.0;
 function objectMove(){
@@ -307,17 +315,52 @@ function objectMove(){
     sunLight.position.set(20, 20, 20)
     //第三人称控制移动，相机距离位置很重要
     speed = 0.0
-    //鼠标控制,mouse.y需要进行俯仰角修正
-    if((mouseSwitch == 1) && (mouseSwitch != 3)){
-        if(mouse.y + 0.3 > 0 && intersectSurface != 0 )
-        speed = 0.1 * Math.abs(mouse.y + 0.3) 
-        if(mouse.y + 0.3 < 0 && intersectSurface != 1 )
-        speed = -0.01 * Math.abs(mouse.y + 0.3);
-        if(mouse.x < 0 )
-        mainObject.rotateY(0.03 * Math.abs(mouse.x)+0.01);
-        if(mouse.x > 0 )
-        mainObject.rotateY(-0.03 * Math.abs(mouse.x)-0.01);
+
+    //点击鼠标移动物体
+    if( mouseSwitch == 5 | continueMove == 1){
+        //通过标记continueMove来完成持续刷新动作
+        if(continueMove != 1){
+            //将主物体移动到点击位置
+            let dir1 = new THREE.Vector3(0, 0, 1)
+            let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
+            //获得由中心指向前方的向量
+            var dir2 = vertexWorldCoord.clone().sub(mainObject.position.clone())
+            var dir3 = currentIntersect.point.clone().sub(mainObject.position)
+            //获得旋转角和移动距离以及旋转角方向
+            angle = dir2.angleTo(dir3)
+            distance  = dir2.distanceTo(dir3)
+            if(mouse.x > 0){
+                angleDirection = -1
+            }else{
+                angleDirection = 1
+            }
+            //标记第一遍后运行持续距离改变
+            continueMove = 1
+        }else if(continueMove == 1){
+            if(angle > 0){
+                mainObject.rotateY(0.05 * angleDirection)
+                angle -= 0.05
+            }else if(distance > 0){
+                mainObject.translateZ(0.05)
+                distance -= 0.05
+            }else(
+                continueMove = 0
+            )
+        }
     }
+    
+    // //鼠标控制,mouse.y需要进行俯仰角修正
+    // if((mouseSwitch == 1) && (mouseSwitch != 3)){
+    //     if(mouse.y + 0.3 > 0)
+    //     speed = 0.1 * Math.abs(mouse.y + 0.3) 
+    //     if(mouse.y + 0.3 < 0)
+    //     speed = -0.01 * Math.abs(mouse.y + 0.3);
+    //     if(mouse.x < 0 )
+    //     mainObject.rotateY(0.01 * Math.abs(mouse.x)+0.01);
+    //     if(mouse.x > 0 )
+    //     mainObject.rotateY(-0.0 * Math.abs(mouse.x)-0.01);
+    // }
+    
     //触控屏幕控制
     if(mouseSwitch == 2){
         if(mouse.y + 0.3 > 0 && intersectSurface != 0 )
@@ -329,14 +372,14 @@ function objectMove(){
         if(mouse.x > 0 )
         mainObject.rotateY(-0.001 * Math.abs(mouse.x)-0.03);
     }
+    
     //键盘控制
     if(keys.w && intersectSurfaceFront != 1)
         speed = 0.05
     if(keys.s && intersectSurfaceBack != 1)
         speed = -0.05
     velocity += (speed - velocity) * .3;
-    mainObject.translateZ(speed);
-
+    mainObject.translateZ(velocity);
     if(keys.a )
         mainObject.rotateY(0.03);
     if(keys.d )
@@ -348,10 +391,10 @@ function objectMove(){
     }
 
     //a是主物体的渐进物体，用来控制物体移动时镜头速度
-    a.lerp(mainObject.position, 0.3);
-    b.copy(camera.position);
-    dir.copy( a ).sub( b ).normalize();
-    const dis = a.distanceTo( b ) - coronaSafetyDistance;
+    temp1.lerp(mainObject.position, 0.3);
+    temp2.copy(camera.position);
+    dir.copy( temp1 ).sub( temp2 ).normalize();
+    const dis = temp1.distanceTo( temp2 ) - coronaSafetyDistance;
     camera.position.addScaledVector( dir, dis );
 
     //使用物体位置来改变灯光位置
@@ -359,11 +402,11 @@ function objectMove(){
     sunLight.target = mainObject
    
     //物体不移动时，镜头速度
-    camera.position.lerp(temp, 0.02);
-    temp.setFromMatrixPosition(follow.matrixWorld);
+    camera.position.lerp(temp0, 0.03);
+    temp0.setFromMatrixPosition(follow.matrixWorld);
     //镜头观察角度提高
-    b.copy(mainObject.position)
-    camera.lookAt(b.setY(2));
+    temp2.copy(mainObject.position)
+    camera.lookAt(temp2.setY(2));
 }
 
 
@@ -374,9 +417,11 @@ let currentIntersect = null
 var objectsToTest = null
 animate()
 function animate(){
+    //初始化trigger
     intersectSurfaceBack = 0
     intersectSurfaceBottom = 0
     intersectSurfaceFront = 0
+    
     var x = 0
     x = modelsGroup.children.length 
     const elapsedTime = clock.getElapsedTime()
@@ -391,7 +436,6 @@ function animate(){
             modelsGroup.getObjectByName('mainObject'),        
         ]
         var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
-
     }else if(x = numberOfModels){
          objectsToTest = [
             modelsGroup.getObjectByName('mainObject'),
@@ -407,7 +451,6 @@ function animate(){
 
     //存放相交的第一个物体
     if(intersects.length){
-        if(intersects[0].distance <= 10 && intersects[0].distance >= 2)
         currentIntersect = intersects[0];
     }
     else
@@ -420,7 +463,9 @@ function animate(){
     //检测是否产生碰撞，并且以此来控制物体的移动方向
     onIntersect()
     objectMove()
-  
+    //初始化移动开关
+    mouseSwitch = 0
+    
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
     // Render
