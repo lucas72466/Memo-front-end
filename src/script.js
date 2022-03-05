@@ -160,6 +160,13 @@ const mouse = new THREE.Vector2()
 var eventSwitch = 0
 //用来控制新一轮的导航事件
 var moveLock = 0
+//控制点击导航事件
+var mouseLock1 = 0
+//控制拖拽导航事件
+var mouseLock2 = 0
+//抹除鼠标微小移动带来的操作模糊
+var tempX = 0
+var tempY = 0
 const keys = {a: false,s: false,d: false,w: false};
 //只需要调用一次，在刷新里不需要调用
 windowChange()
@@ -193,39 +200,52 @@ function windowChange(){
     window.addEventListener('mousemove', (event) =>{ 
         mouse.x = event.clientX / sizes.width * 2 - 1
         mouse.y = - (event.clientY / sizes.height) * 2 + 1
+        //鼠标移动的模糊值，过滤掉细小的鼠标移动
+        tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
+        tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
+        if(mouseLock2 == 1 && (tempX+tempY) >= 15 ){
+            mouseLock1 = 1
+            eventSwitch = 1
+        }
+        tempX = mouse.x * 1000
+        tempY = mouse.y * 1000
     })
 
     //监听鼠标拖动和点击事件
     window.addEventListener('mousedown',(event)=>{
-            eventSwitch = 1
-            if(currentIntersect){
-                //随机改变主物体颜色
-                mainObject.material.color.set(0xFFFFFF*Math.random())
-            }
-
-    })
-    
-    window.addEventListener('click',()=>{
-            eventSwitch = 5
-            //确保每次点击都能获得新的导航点
-            moveLock = 0
-            currentIntersect =null
+        mouseLock1 = 0
+        mouseLock2 = 1
+        if(currentIntersect){
+            //随机改变主物体颜色
+            mainObject.material.color.set(0xFFFFFF*Math.random())
+        }
     })
     
     window.addEventListener('mouseup',()=>{
         eventSwitch = 0
+        mouseLock2 = 0
     })
+    
+    window.addEventListener('click',()=>{
+        if (mouseLock1 == 0) {
+            eventSwitch = 5
+            //确保每次点击都能获得新的导航点
+            moveLock = 0
+            currentIntersect =null
+        }
+    })
+    
     //移入物体时触发
     window.addEventListener('mouseenter',()=>{
     })
-
-
+    
     //监听触摸屏幕
     window.addEventListener('touchend',()=>{
         eventSwitch = 0
     })
+    
     window.addEventListener('touchmove',(event)=>{
-        eventSwitch = 2
+        eventSwitch = 1
         mouse.x = (event.touches[0].pageX/window.innerWidth)*2-1
         mouse.y = -(event.touches[0].pageY/window.innerHeight)*2+1
     })
@@ -349,8 +369,8 @@ function objectMove(){
             moveLock = 1
         }else if(moveLock == 1){
             if(angle > 0){
-                mainObject.rotateY(0.05 * angleDirection)
-                angle -= 0.05
+                mainObject.rotateY(0.04 * angleDirection)
+                angle -= 0.04
             }else if(distance > 0){
                 mainObject.translateZ(0.05)
                 distance -= 0.05
@@ -364,14 +384,14 @@ function objectMove(){
     
     //鼠标控制转向,mouse.y需要进行俯仰角修正
     if(eventSwitch == 1){
-        if(mouse.y + 0.3 > 0)
-        speed = 0.05
-        if(mouse.y + 0.3 < 0)
-        speed = 0
-        if(mouse.x < 0 )
-        mainObject.rotateY(0.01);
+        // if(mouse.y + 0.3 > 0)
+        // speed = 0.05
+        // if(mouse.y + 0.3 < 0)
+        // speed = 0
+        if(mouse.x< 0 )
+        mainObject.rotateY(0.02);
         if(mouse.x > 0 )
-        mainObject.rotateY(-0.01);
+        mainObject.rotateY(-0.02);
     }
     
     //触控屏幕控制
@@ -477,9 +497,6 @@ function animate(){
     //检测是否产生碰撞，并且以此来控制物体的移动方向
     onIntersect()
     objectMove()
-    
-    //初始化移动开关
-    //eventSwitch = 0
     
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
