@@ -71,10 +71,10 @@ function init(){
 
     
     //Controls 环绕视角控制
-    // controls = new OrbitControls(camera, canvas)
-    // controls.enableDamping = true
-    // 控制摄像机保持在水平面以上
-    // controls.maxPolarAngle = Math.PI * 0.5 - 0.1
+    controls = new OrbitControls(camera, canvas)
+    controls.enableDamping = true
+    //控制摄像机保持在水平面以上
+    controls.maxPolarAngle = Math.PI * 0.5 - 0.1
 
     cameraRaycaster = new THREE.Raycaster()
     let currentIntersect = null
@@ -389,16 +389,16 @@ function objectMove(){
     }
     
     //鼠标控制转向,mouse.y需要进行俯仰角修正
-    if(eventSwitch == 1){
-        // if(mouse.y + 0.3 > 0)
-        // speed = 0.05
-        // if(mouse.y + 0.3 < 0)
-        // speed = 0
-        if(mouse.x < 0 )
-        mainObject.rotateY(-mouse.x*0.03);
-        if(mouse.x > 0 )
-        mainObject.rotateY(-mouse.x*0.03);
-    }
+    // if(eventSwitch == 1){
+    //     // if(mouse.y + 0.3 > 0)
+    //     // speed = 0.05
+    //     // if(mouse.y + 0.3 < 0)
+    //     // speed = 0
+    //     if(mouse.x < 0 )
+    //     mainObject.rotateY(-mouse.x*0.03);
+    //     if(mouse.x > 0 )
+    //     mainObject.rotateY(-mouse.x*0.03);
+    // }
     
     // //触控屏幕控制
     // if(eventSwitch == 2){
@@ -436,6 +436,7 @@ function objectMove(){
     dir.copy( temp1 ).sub( temp2 ).normalize();
     const dis = temp1.distanceTo( temp2 ) - coronaSafetyDistance;
     camera.position.addScaledVector( dir, dis );
+    //controls.update()
 
     //使用物体位置来改变灯光位置
     sunLight.position.add(mainObject.position)
@@ -443,10 +444,12 @@ function objectMove(){
    
     //物体不移动时，镜头速度
     camera.position.lerp(temp0, cameraTurnSpeed);
+    //controls.update()
     temp0.setFromMatrixPosition(follow.matrixWorld);
     //镜头观察角度提高
     temp2.copy(mainObject.position)
     camera.lookAt(temp2.setY(2));
+    //controls.update()
 }
 
 
@@ -501,11 +504,15 @@ function animate(){
     //     mixer.update(deltaTime);
     
     //检测是否产生碰撞，并且以此来控制物体的移动方向
-    onIntersect()
-    objectMove()
+    let tempMainObject = mainObject.position.clone()
+    tempMainObject.add(new THREE.Vector3(0,2,0))
+    //console.log(tempMainObject);
+    controls.target = tempMainObject
+    if(mouseLock1 == 0){
+        onIntersect()
+        objectMove()  
+    }
     
-    // Update controls 会与第三人称控制产生视角冲突
-    //controls.update()
     // Render
     renderer.render(scene, camera)
     // Call animate again on the next frame
