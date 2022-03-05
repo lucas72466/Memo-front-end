@@ -167,8 +167,6 @@ var mouseLock2 = 0
 //抹除鼠标微小移动带来的操作模糊
 var tempX = 0
 var tempY = 0
-//控制镜头旋转速度
-var cameraTurnSpeed = 0.03
 const keys = {a: false,s: false,d: false,w: false};
 //只需要调用一次，在刷新里不需要调用
 windowChange()
@@ -205,11 +203,9 @@ function windowChange(){
         //鼠标移动的模糊值，过滤掉细小的鼠标移动
         tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
         tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-        if(mouseLock2 == 1 && (tempX+tempY) >= 100 ){
+        if(mouseLock2 == 0 && (tempX+tempY) >= 40 ){
             mouseLock1 = 1
             eventSwitch = 1
-            //拖拽镜头时旋转速度
-            cameraTurnSpeed = 0.1
         }
         tempX = mouse.x * 1000
         tempY = mouse.y * 1000
@@ -218,7 +214,7 @@ function windowChange(){
     //监听鼠标拖动和点击事件
     window.addEventListener('mousedown',(event)=>{
         mouseLock1 = 0
-        mouseLock2 = 1
+        mouseLock2 = 0
         if(currentIntersect){
             //随机改变主物体颜色
             mainObject.material.color.set(0xFFFFFF*Math.random())
@@ -226,14 +222,8 @@ function windowChange(){
     })
     
     window.addEventListener('mouseup',()=>{
-        eventSwitch = 0
-        mouseLock2 = 0
-    })
-    
-    window.addEventListener('click',()=>{
+        mouseLock2 = 1
         if (mouseLock1 == 0 && currentIntersect) {
-            //点击导航下镜头旋转速度
-            cameraTurnSpeed = 0.02
             eventSwitch = 5
             //确保每次点击都能获得新的导航点
             moveLock = 0
@@ -241,19 +231,15 @@ function windowChange(){
         }
     })
     
+    window.addEventListener('click',()=>{
+    })
+    
     //移入物体时触发
     window.addEventListener('mouseenter',()=>{
     })
-    
-    //监听触摸屏幕
-    window.addEventListener('touchend',()=>{
-        eventSwitch = 0
-    })
-    
+        
     window.addEventListener('touchmove',(event)=>{
-        eventSwitch = 1
-        mouse.x = (event.touches[0].pageX/window.innerWidth)*2-1
-        mouse.y = -(event.touches[0].pageY/window.innerHeight)*2+1
+        mouseLock1 = 1
     })
 }
 
@@ -388,30 +374,6 @@ function objectMove(){
         }
     }
     
-    //鼠标控制转向,mouse.y需要进行俯仰角修正
-    // if(eventSwitch == 1){
-    //     // if(mouse.y + 0.3 > 0)
-    //     // speed = 0.05
-    //     // if(mouse.y + 0.3 < 0)
-    //     // speed = 0
-    //     if(mouse.x < 0 )
-    //     mainObject.rotateY(-mouse.x*0.03);
-    //     if(mouse.x > 0 )
-    //     mainObject.rotateY(-mouse.x*0.03);
-    // }
-    
-    // //触控屏幕控制
-    // if(eventSwitch == 2){
-    //     if(mouse.y + 0.3 > 0 && intersectSurface != 0 )
-    //     speed = 0.2 * Math.abs(mouse.y + 0.3)  
-    //     if(mouse.y + 0.3 < 0 && intersectSurface != 1 )
-    //     speed = -0.1 * Math.abs(mouse.y + 0.3);
-    //     if(mouse.x < 0 )
-    //     mainObject.rotateY(0.001 * Math.abs(mouse.x)+0.03);
-    //     if(mouse.x > 0 )
-    //     mainObject.rotateY(-0.001 * Math.abs(mouse.x)-0.03);
-    // }
-    
     //键盘控制
     if(keys.w && intersectSurfaceFront != 1)
         speed = 0.05
@@ -436,20 +398,20 @@ function objectMove(){
     dir.copy( temp1 ).sub( temp2 ).normalize();
     const dis = temp1.distanceTo( temp2 ) - coronaSafetyDistance;
     camera.position.addScaledVector( dir, dis );
-    //controls.update()
+    controls.update()
 
     //使用物体位置来改变灯光位置
     sunLight.position.add(mainObject.position)
     sunLight.target = mainObject
    
     //物体不移动时，镜头速度
-    camera.position.lerp(temp0, cameraTurnSpeed);
-    //controls.update()
+    camera.position.lerp(temp0, 0.02);
+    controls.update()
     temp0.setFromMatrixPosition(follow.matrixWorld);
     //镜头观察角度提高
     temp2.copy(mainObject.position)
     camera.lookAt(temp2.setY(2));
-    //controls.update()
+    controls.update()
 }
 
 
@@ -506,13 +468,16 @@ function animate(){
     //检测是否产生碰撞，并且以此来控制物体的移动方向
     let tempMainObject = mainObject.position.clone()
     tempMainObject.add(new THREE.Vector3(0,2,0))
-    //console.log(tempMainObject);
     controls.target = tempMainObject
+    //使用trigger来决定物体的视角移动方式
     if(mouseLock1 == 0){
         onIntersect()
         objectMove()  
     }
     
+    
+    //每帧都要更新镜头控制
+    controls.update()
     // Render
     renderer.render(scene, camera)
     // Call animate again on the next frame
