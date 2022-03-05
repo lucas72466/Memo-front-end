@@ -138,7 +138,7 @@ function loadModels(modelsMessage){
 var coronaSafetyDistance = 6;
 var follow = new THREE.Object3D;
 const mainObject = new THREE.Mesh(
-    new THREE.BoxBufferGeometry( 1, 1, 1),
+    new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
     new THREE.MeshStandardMaterial({ color: '#ff0000' })
 )
 mainObject.position.set(0, 0, 0)
@@ -167,6 +167,8 @@ var mouseLock2 = 0
 //抹除鼠标微小移动带来的操作模糊
 var tempX = 0
 var tempY = 0
+//控制镜头旋转速度
+var cameraTurnSpeed = 0.03
 const keys = {a: false,s: false,d: false,w: false};
 //只需要调用一次，在刷新里不需要调用
 windowChange()
@@ -203,9 +205,11 @@ function windowChange(){
         //鼠标移动的模糊值，过滤掉细小的鼠标移动
         tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
         tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-        if(mouseLock2 == 1 && (tempX+tempY) >= 15 ){
+        if(mouseLock2 == 1 && (tempX+tempY) >= 100 ){
             mouseLock1 = 1
             eventSwitch = 1
+            //拖拽镜头时旋转速度
+            cameraTurnSpeed = 0.1
         }
         tempX = mouse.x * 1000
         tempY = mouse.y * 1000
@@ -227,7 +231,9 @@ function windowChange(){
     })
     
     window.addEventListener('click',()=>{
-        if (mouseLock1 == 0) {
+        if (mouseLock1 == 0 && currentIntersect) {
+            //点击导航下镜头旋转速度
+            cameraTurnSpeed = 0.02
             eventSwitch = 5
             //确保每次点击都能获得新的导航点
             moveLock = 0
@@ -348,7 +354,7 @@ function objectMove(){
     speed = 0.0
 
     //点击鼠标移动物体
-    if( (eventSwitch == 5 | moveLock == 1) && currentIntersect){
+    if( eventSwitch == 5 | moveLock == 1){
         //通过标记moveLock来完成持续刷新动作
         if(moveLock != 1){
             //将主物体移动到点击位置
@@ -369,8 +375,8 @@ function objectMove(){
             moveLock = 1
         }else if(moveLock == 1){
             if(angle > 0){
-                mainObject.rotateY(0.04 * angleDirection)
-                angle -= 0.04
+                mainObject.rotateY(0.05 * angleDirection)
+                angle -= 0.05
             }else if(distance > 0){
                 mainObject.translateZ(0.05)
                 distance -= 0.05
@@ -388,23 +394,23 @@ function objectMove(){
         // speed = 0.05
         // if(mouse.y + 0.3 < 0)
         // speed = 0
-        if(mouse.x< 0 )
-        mainObject.rotateY(0.02);
+        if(mouse.x < 0 )
+        mainObject.rotateY(-mouse.x*0.03);
         if(mouse.x > 0 )
-        mainObject.rotateY(-0.02);
+        mainObject.rotateY(-mouse.x*0.03);
     }
     
-    //触控屏幕控制
-    if(eventSwitch == 2){
-        if(mouse.y + 0.3 > 0 && intersectSurface != 0 )
-        speed = 0.2 * Math.abs(mouse.y + 0.3)  
-        if(mouse.y + 0.3 < 0 && intersectSurface != 1 )
-        speed = -0.1 * Math.abs(mouse.y + 0.3);
-        if(mouse.x < 0 )
-        mainObject.rotateY(0.001 * Math.abs(mouse.x)+0.03);
-        if(mouse.x > 0 )
-        mainObject.rotateY(-0.001 * Math.abs(mouse.x)-0.03);
-    }
+    // //触控屏幕控制
+    // if(eventSwitch == 2){
+    //     if(mouse.y + 0.3 > 0 && intersectSurface != 0 )
+    //     speed = 0.2 * Math.abs(mouse.y + 0.3)  
+    //     if(mouse.y + 0.3 < 0 && intersectSurface != 1 )
+    //     speed = -0.1 * Math.abs(mouse.y + 0.3);
+    //     if(mouse.x < 0 )
+    //     mainObject.rotateY(0.001 * Math.abs(mouse.x)+0.03);
+    //     if(mouse.x > 0 )
+    //     mainObject.rotateY(-0.001 * Math.abs(mouse.x)-0.03);
+    // }
     
     //键盘控制
     if(keys.w && intersectSurfaceFront != 1)
@@ -425,7 +431,7 @@ function objectMove(){
     }
 
     //a是主物体的渐进物体，用来控制物体移动时镜头速度
-    temp1.lerp(mainObject.position, 0.3);
+    temp1.lerp(mainObject.position, 0.1);
     temp2.copy(camera.position);
     dir.copy( temp1 ).sub( temp2 ).normalize();
     const dis = temp1.distanceTo( temp2 ) - coronaSafetyDistance;
@@ -436,7 +442,7 @@ function objectMove(){
     sunLight.target = mainObject
    
     //物体不移动时，镜头速度
-    camera.position.lerp(temp0, 0.03);
+    camera.position.lerp(temp0, cameraTurnSpeed);
     temp0.setFromMatrixPosition(follow.matrixWorld);
     //镜头观察角度提高
     temp2.copy(mainObject.position)
