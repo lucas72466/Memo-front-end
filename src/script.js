@@ -156,8 +156,10 @@ modelsGroup.add(mainObject)
 
 //监听屏幕变化
 const mouse = new THREE.Vector2()
-//2是触摸屏事件，5是点击移动事件
-var mouseSwitch = 0
+//1是持续导航事件，2是触摸屏导航事件
+var eventSwitch = 0
+//用来控制新一轮的导航事件
+var moveLock = 0
 const keys = {a: false,s: false,d: false,w: false};
 //只需要调用一次，在刷新里不需要调用
 windowChange()
@@ -195,25 +197,35 @@ function windowChange(){
 
     //监听鼠标拖动和点击事件
     window.addEventListener('mousedown',(event)=>{
-        if(currentIntersect){
-            //随机改变主物体颜色
-            mainObject.material.color.set(0xFFFFFF*Math.random())
-            mouseSwitch = 5
+            eventSwitch = 1
+            if(currentIntersect){
+                //随机改变主物体颜色
+                mainObject.material.color.set(0xFFFFFF*Math.random())
+            }
+
+    })
+    
+    window.addEventListener('click',()=>{
+            eventSwitch = 5
+            //确保每次点击都能获得新的导航点
+            moveLock = 0
             currentIntersect =null
-        }
-        else
-        mouseSwitch = 1
     })
+    
     window.addEventListener('mouseup',()=>{
-        mouseSwitch = 0
+        eventSwitch = 0
     })
+    //移入物体时触发
+    window.addEventListener('mouseenter',()=>{
+    })
+
 
     //监听触摸屏幕
     window.addEventListener('touchend',()=>{
-        mouseSwitch = 0
+        eventSwitch = 0
     })
     window.addEventListener('touchmove',(event)=>{
-        mouseSwitch = 2
+        eventSwitch = 2
         mouse.x = (event.touches[0].pageX/window.innerWidth)*2-1
         mouse.y = -(event.touches[0].pageY/window.innerHeight)*2+1
     })
@@ -304,7 +316,6 @@ var dir = new THREE.Vector3;
 var temp1 = new THREE.Vector3;
 var temp2 = new THREE.Vector3;
 //鼠标点击事件持续运行
-var continueMove = 0
 var angle = null
 var angleDirection = 1
 var distance = null
@@ -317,9 +328,9 @@ function objectMove(){
     speed = 0.0
 
     //点击鼠标移动物体
-    if( mouseSwitch == 5 | continueMove == 1){
-        //通过标记continueMove来完成持续刷新动作
-        if(continueMove != 1){
+    if( (eventSwitch == 5 | moveLock == 1) && currentIntersect){
+        //通过标记moveLock来完成持续刷新动作
+        if(moveLock != 1){
             //将主物体移动到点击位置
             let dir1 = new THREE.Vector3(0, 0, 1)
             let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
@@ -335,34 +346,36 @@ function objectMove(){
                 angleDirection = 1
             }
             //标记第一遍后运行持续距离改变
-            continueMove = 1
-        }else if(continueMove == 1){
+            moveLock = 1
+        }else if(moveLock == 1){
             if(angle > 0){
                 mainObject.rotateY(0.05 * angleDirection)
                 angle -= 0.05
             }else if(distance > 0){
                 mainObject.translateZ(0.05)
                 distance -= 0.05
-            }else(
-                continueMove = 0
-            )
+            }else{
+                moveLock = 0,
+                //这里要将开关重置，否则会一直是5
+                eventSwitch = 0
+            }
         }
     }
     
-    // //鼠标控制,mouse.y需要进行俯仰角修正
-    // if((mouseSwitch == 1) && (mouseSwitch != 3)){
-    //     if(mouse.y + 0.3 > 0)
-    //     speed = 0.1 * Math.abs(mouse.y + 0.3) 
-    //     if(mouse.y + 0.3 < 0)
-    //     speed = -0.01 * Math.abs(mouse.y + 0.3);
-    //     if(mouse.x < 0 )
-    //     mainObject.rotateY(0.01 * Math.abs(mouse.x)+0.01);
-    //     if(mouse.x > 0 )
-    //     mainObject.rotateY(-0.0 * Math.abs(mouse.x)-0.01);
-    // }
+    //鼠标控制转向,mouse.y需要进行俯仰角修正
+    if(eventSwitch == 1){
+        if(mouse.y + 0.3 > 0)
+        speed = 0.05
+        if(mouse.y + 0.3 < 0)
+        speed = 0
+        if(mouse.x < 0 )
+        mainObject.rotateY(0.01);
+        if(mouse.x > 0 )
+        mainObject.rotateY(-0.01);
+    }
     
     //触控屏幕控制
-    if(mouseSwitch == 2){
+    if(eventSwitch == 2){
         if(mouse.y + 0.3 > 0 && intersectSurface != 0 )
         speed = 0.2 * Math.abs(mouse.y + 0.3)  
         if(mouse.y + 0.3 < 0 && intersectSurface != 1 )
@@ -379,7 +392,8 @@ function objectMove(){
     if(keys.s && intersectSurfaceBack != 1)
         speed = -0.05
     velocity += (speed - velocity) * .3;
-    mainObject.translateZ(velocity);
+    mainObject.translateZ(speed);
+    
     if(keys.a )
         mainObject.rotateY(0.03);
     if(keys.d )
@@ -421,7 +435,7 @@ function animate(){
     intersectSurfaceBack = 0
     intersectSurfaceBottom = 0
     intersectSurfaceFront = 0
-    
+
     var x = 0
     x = modelsGroup.children.length 
     const elapsedTime = clock.getElapsedTime()
@@ -463,8 +477,9 @@ function animate(){
     //检测是否产生碰撞，并且以此来控制物体的移动方向
     onIntersect()
     objectMove()
+    
     //初始化移动开关
-    mouseSwitch = 0
+    //eventSwitch = 0
     
     // Update controls 会与第三人称控制产生视角冲突
     //controls.update()
