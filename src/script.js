@@ -159,7 +159,7 @@ const mouse = new THREE.Vector2()
 //1是持续导航事件，2是触摸屏导航事件
 var eventSwitch = 0
 //用来控制新一轮的导航事件
-var moveLock = 0
+var pointMoveLock = 0
 //控制点击导航事件
 var mouseLock1 = 0
 //控制拖拽导航事件
@@ -226,7 +226,7 @@ function windowChange(){
         if (mouseLock1 == 0 && currentIntersect) {
             eventSwitch = 5
             //确保每次点击都能获得新的导航点
-            moveLock = 0
+            pointMoveLock = 0
             currentIntersect =null
         }
     })
@@ -256,7 +256,7 @@ function onIntersect(){
     // 顶点三维向量
     const vertices = []
     //包围圈，要略大于主物体，否则会检测到主物体
-    const temp =  0.65
+    const temp =  0.55
     //声明不同的检测点坐标
     vertices.push(new THREE.Vector3( temp, temp,  temp))
     vertices.push(new THREE.Vector3(-temp, temp,  temp))
@@ -323,10 +323,11 @@ function onIntersect(){
 
 
 //控制主物体移动，让太阳光跟随移动刷新以节约性能
-var temp0 = new THREE.Vector3;
 var dir = new THREE.Vector3;
+var temp0 = new THREE.Vector3;
 var temp1 = new THREE.Vector3;
 var temp2 = new THREE.Vector3;
+var temp3 = new THREE.Vector3;
 //鼠标点击事件持续运行
 var angle = null
 var angleDirection = 1
@@ -339,27 +340,34 @@ function objectMove(){
     //第三人称控制移动，相机距离位置很重要
     speed = 0.0
 
-    //点击鼠标移动物体
-    if( eventSwitch == 5 | moveLock == 1){
-        //通过标记moveLock来完成持续刷新动作
-        if(moveLock != 1){
+    //点击鼠标移动物体，判断条件分别是触发信号，目标移动信号，碰撞信号
+    if( eventSwitch == 5 | pointMoveLock == 1 ){
+        //通过标记pointMoveLock来完成持续刷新动作
+        if(pointMoveLock != 1){
             //将主物体移动到点击位置
             let dir1 = new THREE.Vector3(0, 0, 1)
             let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
             //获得由中心指向前方的向量
-            var dir2 = vertexWorldCoord.clone().sub(mainObject.position.clone())
+            var dir2 = vertexWorldCoord.clone().sub(mainObject.position)
             var dir3 = currentIntersect.point.clone().sub(mainObject.position)
-            //获得旋转角和移动距离以及旋转角方向
+            //获得旋转角和移动距离
             angle = dir2.angleTo(dir3)
             distance  = dir2.distanceTo(dir3)
-            if(mouse.x > 0){
+            //使用两个向量叉乘来确定旋转角方向
+            let direction = dir2.cross(dir3)
+            if(direction.y < 0){
                 angleDirection = -1
             }else{
                 angleDirection = 1
             }
             //标记第一遍后运行持续距离改变
-            moveLock = 1
-        }else if(moveLock == 1){
+            pointMoveLock = 1
+        }else if(pointMoveLock == 1){
+            //发生碰撞时清空点导航目标
+            if (intersectSurfaceFront == 1) {
+                distance = 0
+                //eventSwitch = 0
+            }
             if(angle > 0){
                 mainObject.rotateY(0.05 * angleDirection)
                 angle -= 0.05
@@ -367,7 +375,7 @@ function objectMove(){
                 mainObject.translateZ(0.05)
                 distance -= 0.05
             }else{
-                moveLock = 0,
+                pointMoveLock = 0,
                 //这里要将开关重置，否则会一直是5
                 eventSwitch = 0
             }
@@ -393,10 +401,13 @@ function objectMove(){
     }
 
     //a是主物体的渐进物体，用来控制物体移动时镜头速度
-    temp1.lerp(mainObject.position, 0.1);
-    temp2.copy(camera.position);
-    dir.copy( temp1 ).sub( temp2 ).normalize();
-    const dis = temp1.distanceTo( temp2 ) - coronaSafetyDistance;
+    temp1.copy(mainObject.position)
+    //镜头的观察点上移，同时匹配自由视角转变
+    temp1.setY(2)
+    temp2.lerp(temp1, 0.1);
+    temp3.copy(camera.position);
+    dir.copy( temp2 ).sub( temp3 ).normalize();
+    const dis = temp2.distanceTo( temp3 ) - coronaSafetyDistance;
     camera.position.addScaledVector( dir, dis );
     controls.update()
 
@@ -407,11 +418,8 @@ function objectMove(){
     //物体不移动时，镜头速度
     camera.position.lerp(temp0, 0.02);
     controls.update()
+    
     temp0.setFromMatrixPosition(follow.matrixWorld);
-    //镜头观察角度提高
-    temp2.copy(mainObject.position)
-    camera.lookAt(temp2.setY(2));
-    controls.update()
 }
 
 
@@ -474,7 +482,6 @@ function animate(){
         onIntersect()
         objectMove()  
     }
-    
     
     //每帧都要更新镜头控制
     controls.update()
