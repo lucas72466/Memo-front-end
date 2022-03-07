@@ -92,13 +92,16 @@ var modelsGroup = new THREE.Group()
 modelsGroup.name = 'papa'
 scene.add(modelsGroup)
 //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
-var numberOfModels = 6
+var numberOfModels = 9
 modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-6,-0.1,6.5)
 modelsMessage.push('/models/test/square_2.glb',4,4,4,0,-1,-80)
 modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,5,0.4,1.3)
 modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,4.7,0.4,13)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,1.4,0.4,0.6)
-//modelsMessage.push('/models/test/chair-3-2.gltf',0.3,0.3,0.3,0,1,5)
+//一开始三个物体先藏到地下
+modelsMessage.push('/models/test/book.gltf',1.5,1.5,1.5,5,-5,-5)
+modelsMessage.push('/models/test/pencil.gltf',1,1,1,5,-5,-5)
+modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
 
 
 loadModels(modelsMessage)
@@ -141,7 +144,7 @@ const mainObject = new THREE.Mesh(
     new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
     new THREE.MeshStandardMaterial({ color: '#ff0000' })
 )
-mainObject.position.set(0, 0, 0)
+mainObject.position.set(5, 0, -5)
 mainObject.name = 'mainObject'
 //产生阴影
 mainObject.castShadow = true
@@ -218,6 +221,7 @@ function windowChange(){
         if(currentIntersect){
             //随机改变主物体颜色
             mainObject.material.color.set(0xFFFFFF*Math.random())
+            clickAction()
         }
     })
     
@@ -397,7 +401,7 @@ function objectMove(){
     
     //上斜面!!!!!!!!!!
     if(intersectSurfaceBottom == 1){
-        mainObject.position.y = (0.5-intersectSurfaceDistance) + mainObject.position.y
+        mainObject.position.y = (0.4-intersectSurfaceDistance) + mainObject.position.y
     }
 
     //a是主物体的渐进物体，用来控制物体移动时镜头速度
@@ -422,6 +426,40 @@ function objectMove(){
     temp0.setFromMatrixPosition(follow.matrixWorld);
 }
 
+//获取书笔和收藏模型
+let book = new THREE.Object3D
+let pencil = new THREE.Object3D
+let star = new THREE.Object3D
+let whetherStand = 0
+//点击物体，走近物体时跳出选项
+function clickAction(){
+    //获取被点击的主物体
+    let temp = currentIntersect.object.parent.name + ''
+    let tempObject = modelsGroup.getObjectByName(temp)
+    book = modelsGroup.children[6]
+    pencil = modelsGroup.children[7]
+    star = modelsGroup.children[8]
+    //第一次将物体立起来
+    if(whetherStand == 0){
+        book.rotateX(Math.PI*0.5)
+        star.rotateX(Math.PI*0.5)
+        whetherStand = 1
+    }
+    //限制只有点击垃圾桶有效
+    if(tempObject.name == '11004' || tempObject.name == '11002'  ){
+        temp = tempObject.position.clone()
+        book.position.copy(temp)
+        pencil.position.copy(temp)
+        star.position.copy(temp)
+        book.position.add(new THREE.Vector3(0,2.5,0))
+        pencil.position.add(new THREE.Vector3(1,2.5,0))
+        star.position.add(new THREE.Vector3(-1,2.5,0))
+    }
+}
+
+
+
+
 
 //刷新屏幕动画
 const clock = new THREE.Clock()
@@ -430,6 +468,15 @@ let currentIntersect = null
 var objectsToTest = null
 animate()
 function animate(){
+
+    //旋转物体
+    book.rotateZ(0.01)
+    pencil.rotateY(0.01)
+    star.rotateZ(0.01)
+
+
+
+
     //初始化trigger
     intersectSurfaceBack = 0
     intersectSurfaceBottom = 0
