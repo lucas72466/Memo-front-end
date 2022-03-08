@@ -18,7 +18,7 @@ function init(){
     // Canvas
     canvas = document.querySelector('canvas.webgl')
     //Fog
-    fog = new THREE.Fog("rgb(135,206,250)", 0.1, 40)
+    fog = new THREE.Fog("rgb(135,206,250)", 0.1, 100)
     // Scene
     scene = new THREE.Scene()
     scene.fog = fog
@@ -74,7 +74,7 @@ function init(){
     controls = new OrbitControls(camera, canvas)
     controls.enableDamping = true
     //控制摄像机保持在水平面以上
-    controls.maxPolarAngle = Math.PI * 0.5 - 0.1
+    controls.maxPolarAngle = Math.PI * 0.5
 
     cameraRaycaster = new THREE.Raycaster()
     let currentIntersect = null
@@ -92,9 +92,8 @@ var modelsGroup = new THREE.Group()
 modelsGroup.name = 'papa'
 scene.add(modelsGroup)
 //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
-var numberOfModels = 9
-modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,-6,-0.1,6.5)
-modelsMessage.push('/models/test/square_2.glb',4,4,4,0,-1,-80)
+var numberOfModels = 10
+modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,5,0,-10)
 modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,5,0.4,1.3)
 modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,4.7,0.4,13)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,1.4,0.4,0.6)
@@ -102,6 +101,9 @@ modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,1.4,0.4,0.6)
 modelsMessage.push('/models/test/book.gltf',1.5,1.5,1.5,5,-5,-5)
 modelsMessage.push('/models/test/pencil.gltf',1,1,1,5,-5,-5)
 modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
+//其他建筑
+modelsMessage.push('/models/test/build_FB.glb',2,2,2,-3,-0.5,-60)
+modelsMessage.push('/models/test/square_2.glb',10,10,10,0,-2,-180)
 
 
 loadModels(modelsMessage)
@@ -373,8 +375,8 @@ function objectMove(){
                 //eventSwitch = 0
             }
             if(angle > 0){
-                mainObject.rotateY(0.05 * angleDirection)
-                angle -= 0.05
+                mainObject.rotateY(0.1 * angleDirection)
+                angle -= 0.1
             }else if(distance > 0){
                 mainObject.translateZ(0.05)
                 distance -= 0.05
@@ -436,9 +438,9 @@ function clickAction(){
     //获取被点击的主物体
     let temp = currentIntersect.object.parent.name + ''
     let tempObject = modelsGroup.getObjectByName(temp)
-    book = modelsGroup.children[6]
-    pencil = modelsGroup.children[7]
-    star = modelsGroup.children[8]
+    book = modelsGroup.getObjectByName('11004')
+    pencil = modelsGroup.getObjectByName('11005')
+    star = modelsGroup.getObjectByName('11006')
     //第一次将物体立起来
     if(whetherStand == 0){
         book.rotateX(Math.PI*0.5)
@@ -446,7 +448,7 @@ function clickAction(){
         whetherStand = 1
     }
     //限制只有点击垃圾桶有效
-    if(tempObject.name == '11004' || tempObject.name == '11002'  ){
+    if(tempObject.name == '11003' || tempObject.name == '11001'  ){
         temp = tempObject.position.clone()
         book.position.copy(temp)
         pencil.position.copy(temp)
@@ -456,9 +458,6 @@ function clickAction(){
         star.position.add(new THREE.Vector3(-1,2.5,0))
     }
 }
-
-
-
 
 
 //刷新屏幕动画
@@ -504,6 +503,8 @@ function animate(){
             modelsGroup.getObjectByName('11002'),
             modelsGroup.getObjectByName('11003'),
             modelsGroup.getObjectByName('11004'),
+            modelsGroup.getObjectByName('11007'),
+            modelsGroup.getObjectByName('11008'),
             //objectGroup.getObjectByName('11005'),
         ]
         var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
