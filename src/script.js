@@ -21,7 +21,7 @@ function init(){
     fog = new THREE.Fog("rgb(135,206,250)", 0.1, 100)
     // Scene
     scene = new THREE.Scene()
-    scene.fog = fog
+    //scene.fog = fog
     
     //页面大小
     sizes = {
@@ -36,7 +36,7 @@ function init(){
 
     // Directional light 直射太阳光
     sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-    sunLight.position.set(20, 20, 20)
+    sunLight.position.set(-30, 20, 20)
     gui.add(sunLight, 'intensity').min(0).max(1).step(0.001)
     gui.add(sunLight.position, 'x').min(-50).max(50).step(1)
     gui.add(sunLight.position, 'y').min(- 50).max(50).step(1)
@@ -92,10 +92,10 @@ var modelsGroup = new THREE.Group()
 modelsGroup.name = 'papa'
 scene.add(modelsGroup)
 //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
-var numberOfModels = 10
-modelsMessage.push('/models/cctv/CCTV.gltf',0.3,0.3,0.3,5,0,-10)
-modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,5,0.4,1.3)
-modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,4.7,0.4,13)
+var numberOfModels = 13
+modelsMessage.push('/models/cctv/CCTV.gltf',0.5,0.5,0.5,1,0,14)
+modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,1,0.4,6)
+modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,1,0.4,21)
 modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,1.4,0.4,0.6)
 //一开始三个物体先藏到地下
 modelsMessage.push('/models/test/book.gltf',1.5,1.5,1.5,5,-5,-5)
@@ -104,6 +104,9 @@ modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
 //其他建筑
 modelsMessage.push('/models/test/build_FB.glb',2,2,2,-3,-0.5,-60)
 modelsMessage.push('/models/test/square_2.glb',10,10,10,0,-2,-180)
+modelsMessage.push('/models/test/build_EEE.glb',10,10,10,30,-0.5,26)
+modelsMessage.push('/models/test/build_guild.glb',4,4,4,-22,-0.5,20)
+modelsMessage.push('/models/test/street_lamp.gltf',1,1,1,1.4,-0.5,-1.5)
 
 
 loadModels(modelsMessage)
@@ -146,7 +149,7 @@ const mainObject = new THREE.Mesh(
     new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
     new THREE.MeshStandardMaterial({ color: '#ff0000' })
 )
-mainObject.position.set(5, 0, -5)
+mainObject.position.set(4.5, 0, 7)
 mainObject.name = 'mainObject'
 //产生阴影
 mainObject.castShadow = true
@@ -154,7 +157,7 @@ follow.position.z = -coronaSafetyDistance
 follow.position.y = 2
 mainObject.add( follow )
 //主物体的起始位置
-//mainObject.rotateY(-3)
+mainObject.rotateY(-2)
 modelsGroup.add(mainObject)
 
 
@@ -342,7 +345,7 @@ var velocity = 0.0;
 var speed = 0.0;
 function objectMove(){
     //每次移动开始时取一次固定的光照位置值
-    sunLight.position.set(20, 20, 20)
+    sunLight.position.set(-20, 20, 20)
     //第三人称控制移动，相机距离位置很重要
     speed = 0.0
 
@@ -468,13 +471,11 @@ var objectsToTest = null
 animate()
 function animate(){
 
+    console.log(mainObject.position);
     //旋转物体
     book.rotateZ(0.01)
     pencil.rotateY(0.01)
     star.rotateZ(0.01)
-
-
-
 
     //初始化trigger
     intersectSurfaceBack = 0
@@ -505,7 +506,9 @@ function animate(){
             modelsGroup.getObjectByName('11004'),
             modelsGroup.getObjectByName('11007'),
             modelsGroup.getObjectByName('11008'),
-            //objectGroup.getObjectByName('11005'),
+            modelsGroup.getObjectByName('11009'),
+            modelsGroup.getObjectByName('11010'),
+            modelsGroup.getObjectByName('11011'),
         ]
         var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
     }

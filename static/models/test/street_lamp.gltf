@@ -1,0 +1,169 @@
+{
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5123,
+            "count" : 3564,
+            "max" : [
+                2543
+            ],
+            "min" : [
+                0
+            ],
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 2544,
+            "max" : [
+                5.7313361167907715,
+                8.910896301269531,
+                2.3632450103759766
+            ],
+            "min" : [
+                -2.396986961364746,
+                -30.500181198120117,
+                -2.3873560428619385
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 2544,
+            "max" : [
+                0.9951843619346619,
+                1.0,
+                0.9951853156089783
+            ],
+            "min" : [
+                -0.9951843619346619,
+                -1.0,
+                -0.9951843023300171
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 2544,
+            "max" : [
+                1.0,
+                0.9997283816337585,
+                0.9951862692832947,
+                1.0
+            ],
+            "min" : [
+                -0.9951862692832947,
+                -0.9997283816337585,
+                -0.999590277671814,
+                -1.0
+            ],
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5126,
+            "count" : 2544,
+            "max" : [
+                1.0,
+                1.0
+            ],
+            "min" : [
+                0.0,
+                0.0
+            ],
+            "type" : "VEC2"
+        }
+    ],
+    "asset" : {
+        "generator" : "Khronos Blender glTF 2.0 exporter",
+        "version" : "2.0"
+    },
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 7128,
+            "byteOffset" : 0,
+            "target" : 34963
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 30528,
+            "byteOffset" : 7128,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 30528,
+            "byteOffset" : 37656,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 40704,
+            "byteOffset" : 68184,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 20352,
+            "byteOffset" : 108888,
+            "target" : 34962
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 129240,
+            "uri" : "street_lamp.bin"
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "ShapeIndexedFaceSet",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "NORMAL" : 2,
+                        "POSITION" : 1,
+                        "TANGENT" : 3,
+                        "TEXCOORD_0" : 4
+                    },
+                    "indices" : 0
+                }
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "ShapeIndexedFaceSet",
+            "rotation" : [
+                8.470329472543003e-22,
+                1.376787679419067e-07,
+                -1.376787679419067e-07,
+                1.0
+            ],
+            "scale" : [
+                0.3500480055809021,
+                0.3500480353832245,
+                0.3500480353832245
+            ],
+            "translation" : [
+                -1.8467979431152344,
+                10.457383155822754,
+                -0.004416000097990036
+            ]
+        }
+    ],
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ]
+}
