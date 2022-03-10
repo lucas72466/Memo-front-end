@@ -12,8 +12,8 @@ var gui, canvas, fog, scene, sizes,
 init()
 function init(){
     // Debug
-    gui = new dat.GUI()
-    gui.close()
+    // gui = new dat.GUI()
+    // gui.close()
 
     // Canvas
     canvas = document.querySelector('canvas.webgl')
@@ -31,16 +31,16 @@ function init(){
     
     // Ambient light 环境光
     ambientLight = new THREE.AmbientLight("rgb(255, 255, 255)", 0.5)
-    gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
+    //gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
     scene.add(ambientLight)
 
     // Directional light 直射太阳光
     sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
     sunLight.position.set(-30, 20, 20)
-    gui.add(sunLight, 'intensity').min(0).max(1).step(0.001)
-    gui.add(sunLight.position, 'x').min(-50).max(50).step(1)
-    gui.add(sunLight.position, 'y').min(- 50).max(50).step(1)
-    gui.add(sunLight.position, 'z').min(- 50).max(50).step(1)
+    // gui.add(sunLight, 'intensity').min(0).max(1).step(0.001)
+    // gui.add(sunLight.position, 'x').min(-50).max(50).step(1)
+    // gui.add(sunLight.position, 'y').min(- 50).max(50).step(1)
+    // gui.add(sunLight.position, 'z').min(- 50).max(50).step(1)
     sunLight.castShadow = true
     //调整直射太阳光的范围参数
     sunLight.shadow.camera = new THREE.OrthographicCamera( -10, 10, 10, -10, 0.5, 200 ); 
@@ -381,8 +381,8 @@ function objectMove(){
                 mainObject.rotateY(0.1 * angleDirection)
                 angle -= 0.1
             }else if(distance > 0){
-                mainObject.translateZ(0.05)
-                distance -= 0.05
+                mainObject.translateZ(0.1)
+                distance -= 0.1
             }else{
                 pointMoveLock = 0,
                 //这里要将开关重置，否则会一直是5
