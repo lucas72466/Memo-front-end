@@ -169,9 +169,9 @@ var eventSwitch = 0
 //用来控制新一轮的导航事件
 var pointMoveLock = 0
 //控制点击导航事件
-var mouseLock1 = 0
+var moveLock1 = 0
 //控制拖拽导航事件
-var mouseLock2 = 0
+var moveLock2 = 0
 //抹除鼠标微小移动带来的操作模糊
 var tempX = 0
 var tempY = 0
@@ -211,8 +211,8 @@ function windowChange(){
         //鼠标移动的模糊值，过滤掉细小的鼠标移动
         tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
         tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-        if(mouseLock2 == 0 && (tempX+tempY) >= 40 ){
-            mouseLock1 = 1
+        if(moveLock2 == 0 && (tempX+tempY) >= 40 ){
+            moveLock1 = 1
             eventSwitch = 1
         }
         tempX = mouse.x * 1000
@@ -221,18 +221,18 @@ function windowChange(){
 
     //监听鼠标拖动和点击事件
     window.addEventListener('mousedown',(event)=>{
-        mouseLock1 = 0
-        mouseLock2 = 0
+        moveLock1 = 0
+        moveLock2 = 0
         if(currentIntersect){
             //随机改变主物体颜色
             mainObject.material.color.set(0xFFFFFF*Math.random())
-            clickAction()
+            jumpObjects()
         }
     })
     
     window.addEventListener('mouseup',()=>{
-        mouseLock2 = 1
-        if (mouseLock1 == 0 && currentIntersect) {
+        moveLock2 = 1
+        if (moveLock1 == 0 && currentIntersect) {
             eventSwitch = 5
             //确保每次点击都能获得新的导航点
             pointMoveLock = 0
@@ -248,7 +248,7 @@ function windowChange(){
     })
         
     window.addEventListener('touchmove',(event)=>{
-        mouseLock1 = 1
+        moveLock1 = 1
     })
 }
 
@@ -343,7 +343,7 @@ var angleDirection = 1
 var distance = null
 var velocity = 0.0;
 var speed = 0.0;
-function objectMove(){
+function mainObjectMove(){
     //每次移动开始时取一次固定的光照位置值
     sunLight.position.set(-20, 20, 20)
     //第三人称控制移动，相机距离位置很重要
@@ -431,13 +431,15 @@ function objectMove(){
     temp0.setFromMatrixPosition(follow.matrixWorld);
 }
 
+
 //获取书笔和收藏模型
 let book = new THREE.Object3D
 let pencil = new THREE.Object3D
 let star = new THREE.Object3D
 let whetherStand = 0
+let fatherObject = 0
 //点击物体，走近物体时跳出选项
-function clickAction(){
+function jumpObjects(){
     //获取被点击的主物体
     let temp = currentIntersect.object.parent.name + ''
     let tempObject = modelsGroup.getObjectByName(temp)
@@ -452,45 +454,48 @@ function clickAction(){
     }
     //限制只有点击垃圾桶有效
     if(tempObject.name == '11003' || tempObject.name == '11001'  ){
-        temp = tempObject.position.clone()
-        book.position.copy(temp)
-        pencil.position.copy(temp)
-        star.position.copy(temp)
+        //存储上一级物体
+        fatherObject = tempObject.name
+        let tempPosition = tempObject.position.clone()
+        book.position.copy(tempPosition)
+        pencil.position.copy(tempPosition)
+        star.position.copy(tempPosition)
         book.position.add(new THREE.Vector3(0,2.5,0))
         pencil.position.add(new THREE.Vector3(1,2.5,0))
         star.position.add(new THREE.Vector3(-1,2.5,0))
     }
+    //当点击三个二级物体时跳到其他控制方法
+    if(tempObject.name == '11004'){
+        //关闭物体移动
+        moveLock1 = 1
+        clickBook(fatherObject)
+    }
+    if(tempObject.name == '11005'){
+        //关闭物体移动
+        moveLock1 = 1
+        clickPencil(fatherObject)
+    }
+    if(tempObject.name == '11006'){
+        //关闭物体移动
+        moveLock1 = 1
+        clickStar(fatherObject)
+    }
+
 }
 
 
-//刷新屏幕动画
-const clock = new THREE.Clock()
-let previousTime = 0
+//获取被点击的物体
 let currentIntersect = null
 var objectsToTest = null
-animate()
-function animate(){
-
-    console.log(mainObject.position);
-    //旋转物体
-    book.rotateZ(0.01)
-    pencil.rotateY(0.01)
-    star.rotateZ(0.01)
-
-    //初始化trigger
-    intersectSurfaceBack = 0
-    intersectSurfaceBottom = 0
-    intersectSurfaceFront = 0
-
+function mouseClickObject(){
     var x = 0
     x = modelsGroup.children.length 
-    const elapsedTime = clock.getElapsedTime()
-    const deltaTime = elapsedTime - previousTime
-    previousTime = elapsedTime
+    
     //初始化射线方向
     cameraRaycaster.setFromCamera(mouse, camera)
 
     //很重要！！！！因为从gltf载入group需要时间，所以需要分情况来进行刷新帧率
+    //在这里加入允许产生点击交互的物体
     if (x < numberOfModels){
          objectsToTest = [  
             modelsGroup.getObjectByName('mainObject'),        
@@ -504,6 +509,8 @@ function animate(){
             modelsGroup.getObjectByName('11002'),
             modelsGroup.getObjectByName('11003'),
             modelsGroup.getObjectByName('11004'),
+            modelsGroup.getObjectByName('11005'),
+            modelsGroup.getObjectByName('11006'),
             modelsGroup.getObjectByName('11007'),
             modelsGroup.getObjectByName('11008'),
             modelsGroup.getObjectByName('11009'),
@@ -516,22 +523,38 @@ function animate(){
     //存放相交的第一个物体
     if(intersects.length){
         currentIntersect = intersects[0];
-    }
-    else
+    }else{
         currentIntersect = null;
+    }
+
+}
+
+
+//刷新屏幕动画
+animate()
+function animate(){
+
+    //旋转跳出的三个物体
+    book.rotateZ(0.01)
+    pencil.rotateY(0.01)
+    star.rotateZ(0.01)
+
+    //初始化trigger
+    intersectSurfaceBack = 0
+    intersectSurfaceBottom = 0
+    intersectSurfaceFront = 0
     
-    // // Model animation
-    // if(mixer)
-    //     mixer.update(deltaTime);
+    //检测被点击的物体
+    mouseClickObject()
     
     //检测是否产生碰撞，并且以此来控制物体的移动方向
     let tempMainObject = mainObject.position.clone()
     tempMainObject.add(new THREE.Vector3(0,2,0))
     controls.target = tempMainObject
     //使用trigger来决定物体的视角移动方式
-    if(mouseLock1 == 0){
+    if(moveLock1 == 0){
         onIntersect()
-        objectMove()  
+        mainObjectMove()  
     }
     
     //每帧都要更新镜头控制
@@ -540,4 +563,26 @@ function animate(){
     renderer.render(scene, camera)
     // Call animate again on the next frame
     window.requestAnimationFrame(animate)
+}
+
+
+
+function clickPencil(object){
+    //object 用来追逐被点击的物体
+    console.log(object);
+
+}
+
+
+function clickBook(object){
+    //object 用来追逐被点击的物体
+    console.log(object)
+
+}
+
+
+function clickStar(object){
+    //object 用来追逐被点击的物体
+    console.log(object)
+
 }

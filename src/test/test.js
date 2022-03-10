@@ -15,6 +15,17 @@ gltfLoader.load(
         scene.add(gltf.scene)
     }
 )
+    // // Model animation
+    // if(mixer)
+    //     mixer.update(deltaTime);
+
+//屏幕刷新里的代码
+const clock = new THREE.Clock()
+let previousTime = 0
+
+    const elapsedTime = clock.getElapsedTime()
+    const deltaTime = elapsedTime - previousTime
+    previousTime = elapsedTime
 
 
 
