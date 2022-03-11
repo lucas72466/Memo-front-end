@@ -170,11 +170,13 @@ var eventSwitch = 0
 var clickMoveLock = 0
 //控制点击导航事件
 var moveLock1 = 0
-//控制拖拽导航事件
-var moveLock2 = 0
+//控制拖拽导航事件 一开始锁定防止视角冲突
+var moveLock2 = 1
 //抹除鼠标微小移动带来的操作模糊
 var tempX = 0
 var tempY = 0
+//存储下一次移动距离
+var nextDistance = 0
 const keys = {a: false,s: false,d: false,w: false};
 //只需要调用一次，在刷新里不需要调用
 windowChange()
@@ -194,6 +196,7 @@ function windowChange(){
     
     //监听键盘输入
     window.addEventListener( 'keydown', function(e) {
+        moveLock1 = 0
         const key = e.code.replace('Key', '').toLowerCase();
         if ( keys[ key ] !== undefined )
         keys[ key ] = true; 
@@ -237,6 +240,8 @@ function windowChange(){
             //确保每次点击都能获得新的导航点
             clickMoveLock = 0
             currentIntersect =null
+            //初始化移动距离防止被碰撞检测抵消
+            nextDistance = 0
         }
     })
     
@@ -341,6 +346,8 @@ var temp3 = new THREE.Vector3;
 var angle = null
 var angleDirection = 1
 var distance = null
+//区分上一次移动事件是否中途停止
+var moveTrigger = 0
 var velocity = 0.0;
 var speed = 0.0;
 function mainObjectMove(){
@@ -364,6 +371,8 @@ function mainObjectMove(){
             //获得旋转角和移动距离，同时让物体保留一段距离
             angle = dir2.angleTo(dir3)
             distance  = dir2.distanceTo(dir3) - 0.5
+            //保存移动距离防止被碰撞检测抵消
+            nextDistance = distance
             //使用两个向量叉乘来确定旋转角方向
             let direction = dir2.cross(dir3)
             if(direction.y < 0){
@@ -377,6 +386,7 @@ function mainObjectMove(){
             //发生碰撞时清空点导航目标
             if (intersectSurfaceFront == 1) {
                 distance = 0
+                moveTrigger = 1
             }
             if(angle > 0){
                 //每次刷新旋转一定角度
@@ -386,6 +396,9 @@ function mainObjectMove(){
                 //每次刷新前进一定距离
                 mainObject.translateZ(0.05)
                 distance -= 0.05
+            }else if(intersectSurfaceFront == 0 && moveTrigger == 1){
+                distance = nextDistance
+                moveTrigger = 0
             }else{
                 clickMoveLock = 0,
                 //这里要将开关重置，否则会一直是5
@@ -554,6 +567,7 @@ function animate(){
     let tempMainObject = mainObject.position.clone()
     tempMainObject.add(new THREE.Vector3(0,2,0))
     controls.target = tempMainObject
+    
     //使用trigger来决定物体的视角移动方式
     if(moveLock1 == 0){
         onIntersect()
