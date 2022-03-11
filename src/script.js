@@ -65,7 +65,7 @@
 
         // Main camera 主物体摄像机
         camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
-        camera.position.set(0,3,0)
+        camera.position.set(0,0,0)
         //camera.lookAt( scene.position );
         scene.add(camera)
 
@@ -396,8 +396,9 @@
                     angle -= moveSpeed
                 }else if(distance > 0){
                     //每次刷新前进一定距离
-                    mainObject.translateZ(moveSpeed)
-                    distance -= moveSpeed
+                    velocity += (moveSpeed - velocity) * .2;
+                    mainObject.translateZ(velocity);
+                    distance -= velocity
                 }else if(intersectSurfaceFront == 0 && moveTrigger == 1){
                     //碰撞后将下一次移动距离赋值
                     distance = nextDistance
@@ -416,7 +417,7 @@
         if(keys.s && intersectSurfaceBack != 1)
             speed = -0.05
         velocity += (speed - velocity) * .3;
-        mainObject.translateZ(speed);
+        mainObject.translateZ(velocity);
         
         if(keys.a )
             mainObject.rotateY(0.03);
@@ -432,19 +433,23 @@
         temp1.copy(mainObject.position)
         //镜头的观察点上移，同时匹配自由视角转变
         temp1.setY(2)
-        temp2.lerp(temp1, 0.1);
+        temp2.lerp(temp1, 0.8);
         temp3.copy(camera.position);
-        dir.copy( temp2 ).sub( temp3 ).normalize();
-        const dis = temp2.distanceTo( temp3 ) - coronaSafetyDistance;
-        camera.position.addScaledVector( dir, dis );
-        controls.update()
-
+        let cAndMDistance  = temp1.distanceTo( temp3 )
+        //如果摄像机距离和物体太近就启用视角限制转移，否则就用视角自由转移
+        if (cAndMDistance < coronaSafetyDistance) {
+            dir.copy( temp2 ).sub( temp3 ).normalize();
+            const dis = temp2.distanceTo( temp3 ) - coronaSafetyDistance;
+            camera.position.addScaledVector( dir, dis );
+            controls.update()
+        }
         //使用物体位置来改变灯光位置
         sunLight.position.add(mainObject.position)
         sunLight.target = mainObject
-    
-        //物体不移动时，镜头速度
-        camera.position.lerp(temp0, 0.02);
+
+        //视角自由转移速度
+        var turnSpeed = 0.02
+        camera.position.lerp(temp0, turnSpeed);
         controls.update()
         
         temp0.setFromMatrixPosition(follow.matrixWorld);
@@ -553,6 +558,7 @@
     //刷新屏幕动画
     animate()
     function animate(){
+
         const elapsedTime = clock.getElapsedTime()
         let deltaTime = elapsedTime - previousTime
         previousTime = elapsedTime
