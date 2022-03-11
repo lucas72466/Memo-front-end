@@ -167,7 +167,7 @@ const mouse = new THREE.Vector2()
 //1是持续导航事件，2是触摸屏导航事件
 var eventSwitch = 0
 //用来控制新一轮的导航事件
-var pointMoveLock = 0
+var clickMoveLock = 0
 //控制点击导航事件
 var moveLock1 = 0
 //控制拖拽导航事件
@@ -235,7 +235,7 @@ function windowChange(){
         if (moveLock1 == 0 && currentIntersect) {
             eventSwitch = 5
             //确保每次点击都能获得新的导航点
-            pointMoveLock = 0
+            clickMoveLock = 0
             currentIntersect =null
         }
     })
@@ -350,18 +350,20 @@ function mainObjectMove(){
     speed = 0.0
 
     //点击鼠标移动物体，判断条件分别是触发信号，目标移动信号，碰撞信号
-    if( eventSwitch == 5 | pointMoveLock == 1 ){
-        //通过标记pointMoveLock来完成持续刷新动作
-        if(pointMoveLock != 1){
+    if( eventSwitch == 5 | clickMoveLock == 1 ){
+        //通过标记clickMoveLock来完成持续刷新动作
+        if(clickMoveLock != 1){
             //将主物体移动到点击位置
             let dir1 = new THREE.Vector3(0, 0, 1)
             let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
             //获得由中心指向前方的向量
             var dir2 = vertexWorldCoord.clone().sub(mainObject.position)
             var dir3 = currentIntersect.point.clone().sub(mainObject.position)
-            //获得旋转角和移动距离
+            //将所有导航点设置到与物体同一高度处，减少距离误差
+            dir3.setY(mainObject.position.y)
+            //获得旋转角和移动距离，同时让物体保留一段距离
             angle = dir2.angleTo(dir3)
-            distance  = dir2.distanceTo(dir3)
+            distance  = dir2.distanceTo(dir3) - 0.5
             //使用两个向量叉乘来确定旋转角方向
             let direction = dir2.cross(dir3)
             if(direction.y < 0){
@@ -370,21 +372,22 @@ function mainObjectMove(){
                 angleDirection = 1
             }
             //标记第一遍后运行持续距离改变
-            pointMoveLock = 1
-        }else if(pointMoveLock == 1){
+            clickMoveLock = 1
+        }else if(clickMoveLock == 1){
             //发生碰撞时清空点导航目标
             if (intersectSurfaceFront == 1) {
                 distance = 0
-                //eventSwitch = 0
             }
             if(angle > 0){
-                mainObject.rotateY(0.1 * angleDirection)
-                angle -= 0.1
+                //每次刷新旋转一定角度
+                mainObject.rotateY(0.05 * angleDirection)
+                angle -= 0.05
             }else if(distance > 0){
-                mainObject.translateZ(0.1)
-                distance -= 0.1
+                //每次刷新前进一定距离
+                mainObject.translateZ(0.05)
+                distance -= 0.05
             }else{
-                pointMoveLock = 0,
+                clickMoveLock = 0,
                 //这里要将开关重置，否则会一直是5
                 eventSwitch = 0
             }
