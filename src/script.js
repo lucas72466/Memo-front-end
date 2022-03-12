@@ -7,13 +7,16 @@
 
     //初始化对象
     var gui, canvas, fog, scene, sizes, 
-        ambientLight, sunLight, renderer, 
-        controls, camera, cameraRaycaster
+        ambientLight, sunLight, sunLightPosition, renderer, 
+        controls, camera, cameraRaycaster, manager
     init()
     function init(){
         // Debug
         //  gui = new dat.GUI()
         //  gui.show(deltaTime)
+        
+        //资源加载检查
+        manager = new THREE.LoadingManager();
 
         // Canvas
         canvas = document.querySelector('canvas.webgl')
@@ -36,7 +39,8 @@
 
         // Directional light 直射太阳光
         sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-        sunLight.position.set(-30, 20, 20)
+        sunLightPosition = new THREE.Vector3(-30, 20, 20)
+        sunLight.position.copy(sunLightPosition)
         // gui.add(sunLight, 'intensity').min(0).max(1).step(0.001)
         // gui.add(sunLight.position, 'x').min(-50).max(50).step(1)
         // gui.add(sunLight.position, 'y').min(- 50).max(50).step(1)
@@ -64,7 +68,7 @@
         sunLight.castShadow = true
 
         // Main camera 主物体摄像机
-        camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
+        camera = new THREE.PerspectiveCamera(60, sizes.width / sizes.height, 0.01, 500)
         camera.position.set(0,0,0)
         //camera.lookAt( scene.position );
         scene.add(camera)
@@ -80,8 +84,22 @@
         let currentIntersect = null
     }
 
+    //检测资源加载进程
+    manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+        console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
+    };
+    
+    //检测资源加载是否完毕
+    manager.onLoad = function ( ) {
+        console.log( 'Loading complete!')
+        //将被检测物体存入
+        objectForClick()
+        //加载完毕后第一次刷新页面
+        animate()
+    };
+
     //Models
-    const gltfLoader = new GLTFLoader()
+    const gltfLoader = new GLTFLoader(manager)
 
     //加载模型文件 
     //.push()添加至末尾 .pop()删除末尾 .unshift()添加至开头 .splice()切片
@@ -102,10 +120,10 @@
     modelsMessage.push('/models/test/pencil.gltf',1,1,1,5,-5,-5)
     modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
     //其他建筑
-    modelsMessage.push('/models/test/build_FB.glb',2,2,2,-3,-0.5,-60)
+    modelsMessage.push('/models/test/build_FB.glb',2,2,2,-3,-0.3,-60)
     modelsMessage.push('/models/test/square_2.glb',10,10,10,0,-2,-180)
-    modelsMessage.push('/models/test/build_EEE.glb',10,10,10,30,-0.5,26)
-    modelsMessage.push('/models/test/build_guild.glb',4,4,4,-22,-0.5,20)
+    modelsMessage.push('/models/test/build_EEE.glb',10,10,10,30,0,26)
+    modelsMessage.push('/models/test/build_guild.glb',4,4,4,-22,13,20)
     modelsMessage.push('/models/test/street_lamp.gltf',1,1,1,1.4,-0.5,-1.5)
 
 
@@ -143,7 +161,7 @@
 
     //Main object 主物体
     //摄像机与主物体的距离
-    var coronaSafetyDistance = 6;
+    var coronaSafetyDistance = 8;
     var follow = new THREE.Object3D;
     const mainObject = new THREE.Mesh(
         new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
@@ -214,7 +232,7 @@
             //鼠标移动的模糊值，过滤掉细小的鼠标移动
             tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
             tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-            if(moveLock2 == 0 && (tempX+tempY) >= 40 ){
+            if(moveLock2 == 0 && (tempX+tempY) >= 20 ){
                 moveLock1 = 1
                 eventSwitch = 1
             }
@@ -254,6 +272,9 @@
             
         window.addEventListener('touchmove',(event)=>{
             moveLock1 = 1
+        })
+
+        window.addEventListener('dblclick',()=>{
         })
     }
 
@@ -354,14 +375,14 @@
     var speed = 0.0
     function mainObjectMove(){
         //每次移动开始时取一次固定的光照位置值
-        sunLight.position.set(-20, 20, 20)
+        sunLight.position.copy(sunLightPosition)
         //第三人称控制移动，相机距离位置很重要
         speed = 0
 
         //点击鼠标移动物体，判断条件分别是触发信号，目标移动信号，碰撞信号
         if( eventSwitch == 5 | clickMoveLock == 1 ){
             //通过标记clickMoveLock来完成持续刷新动作
-            if(clickMoveLock != 1){
+            if(clickMoveLock != 1 ){
                 //将主物体移动到点击位置
                 let dir1 = new THREE.Vector3(0, 0, 1)
                 let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
@@ -441,17 +462,14 @@
             dir.copy( temp2 ).sub( temp3 ).normalize();
             const dis = temp2.distanceTo( temp3 ) - coronaSafetyDistance;
             camera.position.addScaledVector( dir, dis );
-            controls.update()
         }
         //使用物体位置来改变灯光位置
         sunLight.position.add(mainObject.position)
         sunLight.target = mainObject
 
         //视角自由转移速度
-        var turnSpeed = 0.02
+        var turnSpeed = moveSpeed/2
         camera.position.lerp(temp0, turnSpeed);
-        controls.update()
-        
         temp0.setFromMatrixPosition(follow.matrixWorld);
     }
 
@@ -508,57 +526,39 @@
     }
 
 
-    //获取被点击的物体
+    //获取被点击的对象集
     let currentIntersect = null
     var objectsToTest = null
-    function mouseClickObject(){
+    function objectForClick(){
         var x = 0
         x = modelsGroup.children.length 
-        
-        //初始化射线方向
-        cameraRaycaster.setFromCamera(mouse, camera)
 
-        //很重要！！！！因为从gltf载入group需要时间，所以需要分情况来进行刷新帧率
         //在这里加入允许产生点击交互的物体
-        if (x < numberOfModels){
-            objectsToTest = [  
-                modelsGroup.getObjectByName('mainObject'),        
-            ]
-            var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
-        }else if(x = numberOfModels){
-            objectsToTest = [
-                modelsGroup.getObjectByName('mainObject'),
-                modelsGroup.getObjectByName('11000'),
-                modelsGroup.getObjectByName('11001'),
-                modelsGroup.getObjectByName('11002'),
-                modelsGroup.getObjectByName('11003'),
-                modelsGroup.getObjectByName('11004'),
-                modelsGroup.getObjectByName('11005'),
-                modelsGroup.getObjectByName('11006'),
-                modelsGroup.getObjectByName('11007'),
-                modelsGroup.getObjectByName('11008'),
-                modelsGroup.getObjectByName('11009'),
-                modelsGroup.getObjectByName('11010'),
-                modelsGroup.getObjectByName('11011'),
-            ]
-            var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
-        }
-
-        //存放相交的第一个物体
-        if(intersects.length){
-            currentIntersect = intersects[0];
-        }else{
-            currentIntersect = null;
-        }
+        objectsToTest = [
+            modelsGroup.getObjectByName('mainObject'),
+            modelsGroup.getObjectByName('11000'),
+            modelsGroup.getObjectByName('11001'),
+            modelsGroup.getObjectByName('11002'),
+            modelsGroup.getObjectByName('11003'),
+            modelsGroup.getObjectByName('11004'),
+            modelsGroup.getObjectByName('11005'),
+            modelsGroup.getObjectByName('11006'),
+            modelsGroup.getObjectByName('11007'),
+            modelsGroup.getObjectByName('11008'),
+            modelsGroup.getObjectByName('11009'),
+            modelsGroup.getObjectByName('11010'),
+            modelsGroup.getObjectByName('11011'),
+        ]
 
     }
-
+ 
+    
     const clock = new THREE.Clock()
     let previousTime = 0
     //刷新屏幕动画
-    animate()
     function animate(){
-
+        
+        //获得帧率
         const elapsedTime = clock.getElapsedTime()
         let deltaTime = elapsedTime - previousTime
         previousTime = elapsedTime
@@ -576,13 +576,16 @@
         intersectSurfaceBottom = 0
         intersectSurfaceFront = 0
         
-        //检测被点击的物体
-        mouseClickObject()
-        
-        //检测是否产生碰撞，并且以此来控制物体的移动方向
-        let tempMainObject = mainObject.position.clone()
-        tempMainObject.add(new THREE.Vector3(0,2,0))
-        controls.target = tempMainObject
+        //初始化射线方向
+        cameraRaycaster.setFromCamera(mouse, camera)
+
+        var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
+        //存放相交的第一个物体
+        if(intersects.length){
+            currentIntersect = intersects[0];
+        }else{
+            currentIntersect = null;
+        }
         
         //使用trigger来决定物体的视角移动方式
         if(moveLock1 == 0){
@@ -591,7 +594,11 @@
         }
         
         //每帧都要更新镜头控制
+        let tempMainObject = mainObject.position.clone()
+        tempMainObject.add(new THREE.Vector3(0,2,0))
+        controls.target = tempMainObject
         controls.update()
+        
         // Render
         renderer.render(scene, camera)
         // Call animate again on the next frame
