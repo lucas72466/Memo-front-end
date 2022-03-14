@@ -3,11 +3,12 @@
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
     import * as dat from 'dat.gui'
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+    import Stats from 'stats.js'
     import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry } from 'three'
 
     //初始化对象
     var gui, canvas, fog, scene, sizes, 
-        ambientLight, sunLight, sunLightPosition, renderer, 
+        hemisphereLight, sunLight, sunLightPosition, renderer, 
         controls, camera, cameraRaycaster, manager
     init()
     function init(){
@@ -21,10 +22,10 @@
         // Canvas
         canvas = document.querySelector('canvas.webgl')
         //Fog
-        fog = new THREE.Fog("rgb(135,206,250)", 0.1, 100)
+        fog = new THREE.Fog("rgb(135,205,235)", 1, 100)
         // Scene
         scene = new THREE.Scene()
-        //scene.fog = fog
+        scene.fog = fog
         
         //页面大小
         sizes = {
@@ -32,22 +33,31 @@
             height: window.innerHeight
         }
         
-        // Ambient light 环境光
-        ambientLight = new THREE.AmbientLight("rgb(255, 255, 255)", 0.5)
-        //gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
-        scene.add(ambientLight)
+
+        //反射光
+        hemisphereLight = new THREE.HemisphereLight( "rgb(255,255,255)", "rgb(255,255,255)", 0.5);
+        scene.add( hemisphereLight );
+
+        //路灯
+        const light = new THREE.PointLight( "rgb(255,97,3)", 2, 20 );
+        light.position.set( -0.5, 9, -1.4 );
+        light.castShadow = true
+        //scene.add( light ); 
+
 
         // Directional light 直射太阳光
         sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
         sunLightPosition = new THREE.Vector3(-30, 20, 20)
         sunLight.position.copy(sunLightPosition)
-        // gui.add(sunLight, 'intensity').min(0).max(1).step(0.001)
-        // gui.add(sunLight.position, 'x').min(-50).max(50).step(1)
-        // gui.add(sunLight.position, 'y').min(- 50).max(50).step(1)
-        // gui.add(sunLight.position, 'z').min(- 50).max(50).step(1)
         sunLight.castShadow = true
         //调整直射太阳光的范围参数
-        sunLight.shadow.camera = new THREE.OrthographicCamera( -10, 10, 10, -10, 0.5, 200 ); 
+        sunLight.shadow.camera = new THREE.OrthographicCamera( -10, 10, 10, -10, 1, 200 );
+        sunLight.shadow.camera.near = 2
+        sunLight.shadow.camera.far = 200
+        sunLight.shadow.camera.left = -50
+        sunLight.shadow.camera.right = 50
+        sunLight.shadow.camera.top = 50
+        sunLight.shadow.camera.bottom = -50
         scene.add(sunLight)
         
         //渲染器
@@ -58,7 +68,7 @@
         //限制像素渲染值
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
         //天空背景颜色
-        renderer.setClearColor("rgb(135,206,250)")
+        renderer.setClearColor("rgb(135,205,235)")
         //导入的模型颜色矫正
         renderer.outputEncoding = THREE.sRGBEncoding
         
@@ -84,6 +94,9 @@
         let currentIntersect = null
     }
 
+    var stats = new Stats();
+    stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild( stats.dom );
     //检测资源加载进程
     manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
         console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
@@ -94,7 +107,7 @@
         console.log( 'Loading complete!')
         //将被检测物体存入
         objectForClick()
-        //加载完毕后第一次刷新页面
+        //加载完毕后再进行第一次刷新页面
         animate()
     };
 
@@ -115,7 +128,7 @@
     modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,1,0.4,6)
     modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,1,0.4,21)
     modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,1.4,0.4,0.6)
-    //一开始三个物体先藏到地下
+    //一开始三个物体先放到地下
     modelsMessage.push('/models/test/book.gltf',1.5,1.5,1.5,5,-5,-5)
     modelsMessage.push('/models/test/pencil.gltf',1,1,1,5,-5,-5)
     modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
@@ -247,6 +260,7 @@
             if(currentIntersect){
                 //随机改变主物体颜色
                 mainObject.material.color.set(0xFFFFFF*Math.random())
+                console.log(currentIntersect);
                 jumpObjects()
             }
         })
@@ -279,27 +293,27 @@
     }
 
 
-    //检测碰撞
+    //检测碰撞, 初始化检测点
     var intersectSurfaceBottom = null
     var intersectSurfaceFront = null
     var intersectSurfaceBack = null
     var intersectSurfaceDistance = null
     var intersectsWithObject = null
+    // 顶点三维向量
+    const vertices = []
+    //包围圈，要略大于主物体，否则会检测到主物体
+    const temp =  0.55
+    //声明不同的检测点坐标
+    vertices.push(new THREE.Vector3( temp, temp,  temp))
+    vertices.push(new THREE.Vector3(-temp, temp,  temp))
+    vertices.push(new THREE.Vector3(-temp, temp, -temp))
+    vertices.push(new THREE.Vector3( temp, temp, -temp))
+    vertices.push(new THREE.Vector3(0, 0,  temp))
+    vertices.push(new THREE.Vector3(0, -temp, 0))
+    vertices.push(new THREE.Vector3(0, 0, -temp))
     function onIntersect(){
         // 物体中心点坐标
         const centerCoord = mainObject.position.clone()
-        // 顶点三维向量
-        const vertices = []
-        //包围圈，要略大于主物体，否则会检测到主物体
-        const temp =  0.55
-        //声明不同的检测点坐标
-        vertices.push(new THREE.Vector3( temp, temp,  temp))
-        vertices.push(new THREE.Vector3(-temp, temp,  temp))
-        vertices.push(new THREE.Vector3(-temp, temp, -temp))
-        vertices.push(new THREE.Vector3( temp, temp, -temp))
-        vertices.push(new THREE.Vector3(0, 0,  temp))
-        vertices.push(new THREE.Vector3(0, -temp, 0))
-        vertices.push(new THREE.Vector3(0, 0, -temp))
         
         //先创建前和下两条检测线
         for (let i = 4; i < 7; i++) {
@@ -374,8 +388,6 @@
     var moveSpeed = 0.0;
     var speed = 0.0
     function mainObjectMove(){
-        //每次移动开始时取一次固定的光照位置值
-        sunLight.position.copy(sunLightPosition)
         //第三人称控制移动，相机距离位置很重要
         speed = 0
 
@@ -417,9 +429,8 @@
                     angle -= moveSpeed
                 }else if(distance > 0){
                     //每次刷新前进一定距离
-                    velocity += (moveSpeed - velocity) * .2;
-                    mainObject.translateZ(velocity);
-                    distance -= velocity
+                    mainObject.translateZ(moveSpeed);
+                    distance -= moveSpeed
                 }else if(intersectSurfaceFront == 0 && moveTrigger == 1){
                     //碰撞后将下一次移动距离赋值
                     distance = nextDistance
@@ -434,18 +445,17 @@
         
         //键盘控制
         if(keys.w && intersectSurfaceFront != 1)
-            speed = 0.05
+            speed = 0.1
         if(keys.s && intersectSurfaceBack != 1)
-            speed = -0.05
-        velocity += (speed - velocity) * .3;
-        mainObject.translateZ(velocity);
+            speed = -0.1
+        mainObject.translateZ(speed);
         
         if(keys.a )
             mainObject.rotateY(0.03);
         if(keys.d )
             mainObject.rotateY(-0.03);
         
-        //上斜面!!!!!!!!!!
+        //上斜面，通过模糊高度变化来控制上行高度
         if(intersectSurfaceBottom == 1){
             mainObject.position.y = (0.4-intersectSurfaceDistance) + mainObject.position.y
         }
@@ -463,12 +473,9 @@
             const dis = temp2.distanceTo( temp3 ) - coronaSafetyDistance;
             camera.position.addScaledVector( dir, dis );
         }
-        //使用物体位置来改变灯光位置
-        sunLight.position.add(mainObject.position)
-        sunLight.target = mainObject
 
         //视角自由转移速度
-        var turnSpeed = moveSpeed/2
+        var turnSpeed = moveSpeed/3
         camera.position.lerp(temp0, turnSpeed);
         temp0.setFromMatrixPosition(follow.matrixWorld);
     }
@@ -599,6 +606,7 @@
         controls.target = tempMainObject
         controls.update()
         
+        stats.update()
         // Render
         renderer.render(scene, camera)
         // Call animate again on the next frame
