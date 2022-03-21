@@ -68,13 +68,13 @@
 
         // Directional light 直射太阳光
         sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-        sunLightPosition = new THREE.Vector3(30, 20, 0)
+        sunLightPosition = new THREE.Vector3(50, 50, 0)
         sunLight.position.copy(sunLightPosition)
         sunLight.castShadow = true
         //调整直射太阳光的范围参数
-        sunLight.shadow.camera = new THREE.OrthographicCamera( -10, 10, 10, -10, 1, 200 );
+        sunLight.shadow.camera = new THREE.OrthographicCamera();
         sunLight.shadow.camera.near = 2
-        sunLight.shadow.camera.far = 200
+        sunLight.shadow.camera.far = 500
         sunLight.shadow.camera.left = -50
         sunLight.shadow.camera.right = 50
         sunLight.shadow.camera.top = 50
@@ -260,43 +260,47 @@
             keys[ key ] = false;
         });
 
-        //监听鼠标移动, 定位鼠标
-        window.addEventListener('mousemove', (event) =>{ 
-            mouse.x = event.clientX / sizes.width * 2 - 1
-            mouse.y = - (event.clientY / sizes.height) * 2 + 1
-            //鼠标移动的模糊值，过滤掉细小的鼠标移动
-            tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
-            tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-            if(moveLock2 == 0 && (tempX+tempY) >= 20 && isPC){
-                moveLock1 = 1
-                eventSwitch = 1
-            }
-            tempX = mouse.x * 1000
-            tempY = mouse.y * 1000
-        })
+        //判断是否是pc，避免安卓同时触发两种事件监听
+        if (isPC) {
+            //监听鼠标移动, 定位鼠标
+            window.addEventListener('mousemove', (event) =>{ 
+                mouse.x = event.clientX / sizes.width * 2 - 1
+                mouse.y = - (event.clientY / sizes.height) * 2 + 1
+                //鼠标移动的模糊值，过滤掉细小的鼠标移动
+                tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
+                tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
+                if(moveLock2 == 0 && (tempX+tempY) >= 20){
+                    moveLock1 = 1
+                    eventSwitch = 1
+                }
+                tempX = mouse.x * 1000
+                tempY = mouse.y * 1000
+            })
 
-        //监听鼠标拖动和点击事件 判断是否是安卓设备（安卓设备太敏感，会一起触发）
-        window.addEventListener('mousedown',(event)=>{
-            moveLock1 = 0
-            moveLock2 = 0
-            if(currentIntersect && isPC){
-                //随机改变主物体颜色
-                mainObject.material.color.set(0xFFFFFF*Math.random())
-                jumpObjects()
-            }
-        })
+            //监听鼠标拖动和点击事件
+            window.addEventListener('mousedown',(event)=>{
+                moveLock1 = 0
+                moveLock2 = 0
+                if(currentIntersect){
+                    //随机改变主物体颜色
+                    mainObject.material.color.set(0xFFFFFF*Math.random())
+                    jumpObjects()
+                }
+            })
         
-        window.addEventListener('mouseup',()=>{
-            moveLock2 = 1
-            if (moveLock1 == 0 && currentIntersect && isPC) {
-                eventSwitch = 5
-                //确保每次点击都能获得新的导航点
-                clickMoveLock = 0
-                currentIntersect =null
-                //初始化移动距离防止被碰撞检测抵消
-                nextDistance = 0
-            }
-        })
+            window.addEventListener('mouseup',()=>{
+                moveLock2 = 1
+                if (moveLock1 == 0 && currentIntersect) {
+                    eventSwitch = 5
+                    //确保每次点击都能获得新的导航点
+                    clickMoveLock = 0
+                    currentIntersect =null
+                    //初始化移动距离防止被碰撞检测抵消
+                    nextDistance = 0
+                }
+            })
+        }
+        
         
         //ios系统需要特殊优化一下 “event.touches[0].pageX ”
         window.addEventListener('touchstart',(event)=>{
@@ -319,8 +323,6 @@
         })
 
         window.addEventListener('touchmove',(event)=>{
-            mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
-            mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
             //鼠标移动的模糊值，过滤掉细小的鼠标移动
             tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
             tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
@@ -371,7 +373,6 @@
             if (intersectsWithObject[0].distance < temp) {
                 if(i == 5){
                     intersectSurfaceBottom = 1
-                    console.log("1");
                     intersectSurfaceDistance = intersectsWithObject[0].distance
                 }else if(i == 4 ){
                     intersectSurfaceFront = 1
@@ -500,6 +501,8 @@
         //上斜面，通过模糊高度变化来控制上行高度
         if(intersectSurfaceBottom == 1){
             mainObject.position.y = (0.4-intersectSurfaceDistance) + mainObject.position.y
+        }else if(intersectSurfaceBottom != 1){
+            mainObject.position.y = mainObject.position.y - 0.1
         }
 
         //a是主物体的渐进物体，用来控制物体移动时镜头速度
