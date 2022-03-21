@@ -6,16 +6,37 @@
     import Stats from 'stats.js'
     import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry } from 'three'
 
+    //判断用户使用设备
+    function IsPC() {
+        var userAgentInfo = navigator.userAgent;
+        var Agents = ["Android", "iPhone",
+            "SymbianOS", "Windows Phone",
+            "iPad", "iPod"
+        ];
+        var flag = true;
+        for(var v = 0; v < Agents.length; v++) {
+            if(userAgentInfo.indexOf(Agents[v]) > 0) {
+                flag = false;
+                break;
+            }
+        }
+        return flag;
+    }
+    
+    
     //初始化对象
     var gui, canvas, fog, scene, sizes, 
         hemisphereLight, sunLight, sunLightPosition, renderer, 
-        controls, camera, cameraRaycaster, manager
+        controls, camera, cameraRaycaster, manager, isPC
     init()
     function init(){
         // Debug
         //  gui = new dat.GUI()
         //  gui.show(deltaTime)
-        
+
+        //判断用户使用设备
+        isPC = IsPC()
+        console.log(isPC);
         //资源加载检查
         manager = new THREE.LoadingManager();
 
@@ -47,7 +68,7 @@
 
         // Directional light 直射太阳光
         sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-        sunLightPosition = new THREE.Vector3(-30, 20, 20)
+        sunLightPosition = new THREE.Vector3(30, 20, 0)
         sunLight.position.copy(sunLightPosition)
         sunLight.castShadow = true
         //调整直射太阳光的范围参数
@@ -78,7 +99,7 @@
         sunLight.castShadow = true
 
         // Main camera 主物体摄像机
-        camera = new THREE.PerspectiveCamera(60, sizes.width / sizes.height, 0.01, 500)
+        camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
         camera.position.set(0,0,0)
         //camera.lookAt( scene.position );
         scene.add(camera)
@@ -123,21 +144,22 @@
     modelsGroup.name = 'papa'
     scene.add(modelsGroup)
     //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
-    var numberOfModels = 13
-    modelsMessage.push('/models/cctv/CCTV.gltf',0.5,0.5,0.5,1,0,14)
-    modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,1,0.4,6)
+    var numberOfModels = 14
+    modelsMessage.push('/models/cctv/CCTV.gltf',0.5,0.5,0.5,-3,1,-14)
+    modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-6,2,4)
     modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,1,0.4,21)
-    modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,1.4,0.4,0.6)
+    modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,2,1.5,-13)
     //一开始三个物体先放到地下
     modelsMessage.push('/models/test/book.gltf',1.5,1.5,1.5,5,-5,-5)
     modelsMessage.push('/models/test/pencil.gltf',1,1,1,5,-5,-5)
     modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
     //其他建筑
-    modelsMessage.push('/models/test/build_FB.glb',2,2,2,-3,-0.3,-60)
-    modelsMessage.push('/models/test/square_2.glb',10,10,10,0,-2,-180)
-    modelsMessage.push('/models/test/build_EEE.glb',10,10,10,30,0,26)
-    modelsMessage.push('/models/test/build_guild.glb',4,4,4,-22,13,20)
-    modelsMessage.push('/models/test/street_lamp.gltf',1,1,1,1.4,-0.5,-1.5)
+    modelsMessage.push('/models/building_model/base.gltf',5,5,5,0,0,0)
+    modelsMessage.push('/models/building_model/build_Alsop.gltf',5,5,5,50,3,15)
+    modelsMessage.push('/models/building_model/build_EEE.gltf',5,5,5,25,10,-25)
+    modelsMessage.push('/models/building_model/build_FB.gltf',5,5,5,-35,10,15)
+    modelsMessage.push('/models/building_model/build_Guild.gltf',5,5,5,10,10,20)
+    modelsMessage.push('/models/building_model/build_Victoria.gltf',5,5,5,-40,10,-25)
 
 
     loadModels(modelsMessage)
@@ -174,13 +196,13 @@
 
     //Main object 主物体
     //摄像机与主物体的距离
-    var coronaSafetyDistance = 8;
+    var coronaSafetyDistance = 6;
     var follow = new THREE.Object3D;
     const mainObject = new THREE.Mesh(
         new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
         new THREE.MeshStandardMaterial({ color: '#ff0000' })
     )
-    mainObject.position.set(4.5, 0, 7)
+    mainObject.position.set(15, 0.9, -3)
     mainObject.name = 'mainObject'
     //产生阴影
     mainObject.castShadow = true
@@ -188,7 +210,7 @@
     follow.position.y = 2
     mainObject.add( follow )
     //主物体的起始位置
-    mainObject.rotateY(-2)
+    mainObject.rotateY(-1)
     modelsGroup.add(mainObject)
 
 
@@ -245,7 +267,7 @@
             //鼠标移动的模糊值，过滤掉细小的鼠标移动
             tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
             tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-            if(moveLock2 == 0 && (tempX+tempY) >= 20 ){
+            if(moveLock2 == 0 && (tempX+tempY) >= 20 && isPC){
                 moveLock1 = 1
                 eventSwitch = 1
             }
@@ -253,21 +275,20 @@
             tempY = mouse.y * 1000
         })
 
-        //监听鼠标拖动和点击事件
+        //监听鼠标拖动和点击事件 判断是否是安卓设备（安卓设备太敏感，会一起触发）
         window.addEventListener('mousedown',(event)=>{
             moveLock1 = 0
             moveLock2 = 0
-            if(currentIntersect){
+            if(currentIntersect && isPC){
                 //随机改变主物体颜色
                 mainObject.material.color.set(0xFFFFFF*Math.random())
-                console.log(currentIntersect);
                 jumpObjects()
             }
         })
         
         window.addEventListener('mouseup',()=>{
             moveLock2 = 1
-            if (moveLock1 == 0 && currentIntersect) {
+            if (moveLock1 == 0 && currentIntersect && isPC) {
                 eventSwitch = 5
                 //确保每次点击都能获得新的导航点
                 clickMoveLock = 0
@@ -277,18 +298,38 @@
             }
         })
         
-        window.addEventListener('click',()=>{
-        })
-        
-        //移入物体时触发
-        window.addEventListener('mouseenter',()=>{
-        })
-            
-        window.addEventListener('touchmove',(event)=>{
-            moveLock1 = 1
+        //ios系统需要特殊优化一下 “event.touches[0].pageX ”
+        window.addEventListener('touchstart',(event)=>{
+            mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
+            mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
+            moveLock1 = 0
+            moveLock2 = 0
+            if(currentIntersect){
+                //随机改变主物体颜色
+                mainObject.material.color.set(0xFFFFFF*Math.random())
+                console.log(currentIntersect);
+                jumpObjects()
+                eventSwitch = 5
+                //确保每次点击都能获得新的导航点
+                clickMoveLock = 0
+                currentIntersect =null
+                //初始化移动距离防止被碰撞检测抵消
+                nextDistance = 0
+            }
         })
 
-        window.addEventListener('dblclick',()=>{
+        window.addEventListener('touchmove',(event)=>{
+            mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
+            mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
+            //鼠标移动的模糊值，过滤掉细小的鼠标移动
+            tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
+            tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
+            if(moveLock2 == 0 && (tempX+tempY) >= 1 ){
+                moveLock1 = 1
+                eventSwitch = 1
+            }
+            tempX = mouse.x * 1000
+            tempY = mouse.y * 1000
         })
     }
 
@@ -330,6 +371,7 @@
             if (intersectsWithObject[0].distance < temp) {
                 if(i == 5){
                     intersectSurfaceBottom = 1
+                    console.log("1");
                     intersectSurfaceDistance = intersectsWithObject[0].distance
                 }else if(i == 4 ){
                     intersectSurfaceFront = 1
@@ -475,7 +517,7 @@
         }
 
         //视角自由转移速度
-        var turnSpeed = moveSpeed/3
+        var turnSpeed = moveSpeed/4
         camera.position.lerp(temp0, turnSpeed);
         temp0.setFromMatrixPosition(follow.matrixWorld);
     }
@@ -564,7 +606,6 @@
     let previousTime = 0
     //刷新屏幕动画
     function animate(){
-        
         //获得帧率
         const elapsedTime = clock.getElapsedTime()
         let deltaTime = elapsedTime - previousTime

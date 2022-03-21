@@ -1,0 +1,128 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v3.2.15",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "Shape_IndexedFaceSet.001",
+            "rotation" : [
+                0,
+                0.5134646892547607,
+                0,
+                0.8581107258796692
+            ],
+            "scale" : [
+                0.12722906470298767,
+                0.30100899934768677,
+                0.6666296720504761
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "name" : "MA_Material.007",
+            "pbrMetallicRoughness" : {
+                "baseColorFactor" : [
+                    0.014811724424362183,
+                    0.0015347902663052082,
+                    0.8000000715255737,
+                    1
+                ],
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.5
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Shape_IndexedFaceSet.006",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 4162,
+            "max" : [
+                6.567270278930664,
+                6.444742202758789,
+                2.813835859298706
+            ],
+            "min" : [
+                -16.73262596130371,
+                -9.72135066986084,
+                -3.931710958480835
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 4162,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 4162,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5123,
+            "count" : 7182,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 49944,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 49944,
+            "byteOffset" : 49944
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 33296,
+            "byteOffset" : 99888
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 14364,
+            "byteOffset" : 133184
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 147548,
+            "uri" : "build_Guild.bin"
+        }
+    ]
+}
