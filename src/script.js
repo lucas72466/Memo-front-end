@@ -4,7 +4,7 @@
     import * as dat from 'dat.gui'
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
     import Stats from 'stats.js'
-    import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry } from 'three'
+    import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry, WebGLRenderer } from 'three'
 
     //判断用户使用设备
     function IsPC() {
@@ -46,7 +46,7 @@
         fog = new THREE.Fog("rgb(135,205,235)", 1, 100)
         // Scene
         scene = new THREE.Scene()
-        scene.fog = fog
+        //scene.fog = fog
         
         //页面大小
         sizes = {
@@ -55,8 +55,8 @@
         }
         
 
-        //反射光
-        hemisphereLight = new THREE.HemisphereLight( "rgb(255,255,255)", "rgb(255,255,255)", 0.5);
+        //半球反射光，增加真实度
+        hemisphereLight = new THREE.HemisphereLight( "rgb(255,255,255)", "rgb(150,150,150)", 0.5);
         scene.add( hemisphereLight );
 
         //路灯
@@ -67,18 +67,22 @@
 
 
         // Directional light 直射太阳光
-        sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.5)
-        sunLightPosition = new THREE.Vector3(50, 50, 0)
+        sunLight = new THREE.DirectionalLight("rgb(255,255,255)", 0.6)
+        sunLightPosition = new THREE.Vector3(20, 20, 20)
         sunLight.position.copy(sunLightPosition)
         sunLight.castShadow = true
         //调整直射太阳光的范围参数
         sunLight.shadow.camera = new THREE.OrthographicCamera();
-        sunLight.shadow.camera.near = 2
-        sunLight.shadow.camera.far = 500
+        sunLight.shadow.camera.near = 0
+        sunLight.shadow.camera.far = 80
         sunLight.shadow.camera.left = -50
         sunLight.shadow.camera.right = 50
         sunLight.shadow.camera.top = 50
         sunLight.shadow.camera.bottom = -50
+        //调整阴影质量，数越大阴影质量越好
+        sunLight.shadow.mapSize = new THREE.Vector2(2048,2048)
+        //删除光照阴影导致的条纹，需要随着光照数据而改变
+        sunLight.shadow.bias = -0.0016
         scene.add(sunLight)
         
         //渲染器
@@ -92,7 +96,6 @@
         renderer.setClearColor("rgb(135,205,235)")
         //导入的模型颜色矫正
         renderer.outputEncoding = THREE.sRGBEncoding
-        
         //shadows 阴影
         renderer.shadowMap.enabled = true
         renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -114,20 +117,30 @@
         cameraRaycaster = new THREE.Raycaster()
         let currentIntersect = null
     }
-
+    
+    //或许屏幕刷新频率
     var stats = new Stats();
     stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild( stats.dom );
+    
     //检测资源加载进程
     manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
-        console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
+        console.log( 'Started loading file: ' + url + '.\nLoaded ' 
+                    + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
     };
     
+    //获取书笔和收藏模型
+    let book = new THREE.Object3D
+    let pencil = new THREE.Object3D
+    let star = new THREE.Object3D
     //检测资源加载是否完毕
     manager.onLoad = function ( ) {
         console.log( 'Loading complete!')
         //将被检测物体存入
         objectForClick()
+        book = modelsGroup.getObjectByName('11004')
+        pencil = modelsGroup.getObjectByName('11005')
+        star = modelsGroup.getObjectByName('11006')
         //加载完毕后再进行第一次刷新页面
         animate()
     };
@@ -203,11 +216,12 @@
         new THREE.MeshStandardMaterial({ color: '#ff0000' })
     )
     mainObject.position.set(15, 0.9, -3)
+    mainObject.scale.set(1,2,1)
     mainObject.name = 'mainObject'
     //产生阴影
     mainObject.castShadow = true
     follow.position.z = -coronaSafetyDistance
-    follow.position.y = 2
+    follow.position.y = 1.5
     mainObject.add( follow )
     //主物体的起始位置
     mainObject.rotateY(-1)
@@ -217,7 +231,7 @@
 
     //监听屏幕变化
     const mouse = new THREE.Vector2()
-    //1是持续导航事件，2是触摸屏导航事件
+    //1是转动视角事件，2是点击导航事件， 
     var eventSwitch = 0
     //用来控制新一轮的导航事件
     var clickMoveLock = 0
@@ -281,17 +295,12 @@
             window.addEventListener('mousedown',(event)=>{
                 moveLock1 = 0
                 moveLock2 = 0
-                if(currentIntersect){
-                    //随机改变主物体颜色
-                    mainObject.material.color.set(0xFFFFFF*Math.random())
-                    jumpObjects()
-                }
             })
         
             window.addEventListener('mouseup',()=>{
                 moveLock2 = 1
                 if (moveLock1 == 0 && currentIntersect) {
-                    eventSwitch = 5
+                    eventSwitch = 2
                     //确保每次点击都能获得新的导航点
                     clickMoveLock = 0
                     currentIntersect =null
@@ -304,16 +313,17 @@
         
         //ios系统需要特殊优化一下 “event.touches[0].pageX ”
         window.addEventListener('touchstart',(event)=>{
+            //获取触摸点，以便进行碰撞检测
             mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
             mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
             moveLock1 = 0
             moveLock2 = 0
-            if(currentIntersect){
-                //随机改变主物体颜色
-                mainObject.material.color.set(0xFFFFFF*Math.random())
-                console.log(currentIntersect);
-                jumpObjects()
-                eventSwitch = 5
+        })
+
+        window.addEventListener('touchend',()=>{
+            moveLock2 = 1
+            if (moveLock1 == 0 && currentIntersect) {
+                eventSwitch = 2
                 //确保每次点击都能获得新的导航点
                 clickMoveLock = 0
                 currentIntersect =null
@@ -321,7 +331,7 @@
                 nextDistance = 0
             }
         })
-
+        
         window.addEventListener('touchmove',(event)=>{
             //鼠标移动的模糊值，过滤掉细小的鼠标移动
             tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
@@ -370,7 +380,7 @@
         intersectsWithObject = raycaster.intersectObjects(objectsToTest, true)
         // 检测是哪个面发生了碰撞
         if (intersectsWithObject.length > 0) {
-            if (intersectsWithObject[0].distance < temp) {
+            if (intersectsWithObject[0].distance < 2*temp) {
                 if(i == 5){
                     intersectSurfaceBottom = 1
                     intersectSurfaceDistance = intersectsWithObject[0].distance
@@ -434,10 +444,13 @@
         //第三人称控制移动，相机距离位置很重要
         speed = 0
 
-        //点击鼠标移动物体，判断条件分别是触发信号，目标移动信号，碰撞信号
-        if( eventSwitch == 5 | clickMoveLock == 1 ){
+        //点击鼠标移动物体，判断条件分别是触发信号， 是否获得目标点信号
+        if( (eventSwitch == 2 | clickMoveLock == 1)){
             //通过标记clickMoveLock来完成持续刷新动作
-            if(clickMoveLock != 1 ){
+            //同时通过判断currentIntersect来防止移动设备的识别错误
+            if((clickMoveLock != 1) && currentIntersect){
+                //调用二级物体触发方法
+                jumpObjects()
                 //将主物体移动到点击位置
                 let dir1 = new THREE.Vector3(0, 0, 1)
                 let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
@@ -488,9 +501,9 @@
         
         //键盘控制
         if(keys.w && intersectSurfaceFront != 1)
-            speed = 0.1
+            speed = 0.05
         if(keys.s && intersectSurfaceBack != 1)
-            speed = -0.1
+            speed = -0.05
         mainObject.translateZ(speed);
         
         if(keys.a )
@@ -500,7 +513,7 @@
         
         //上斜面，通过模糊高度变化来控制上行高度
         if(intersectSurfaceBottom == 1){
-            mainObject.position.y = (0.4-intersectSurfaceDistance) + mainObject.position.y
+            mainObject.position.y = (0.8-intersectSurfaceDistance) + mainObject.position.y
         }else if(intersectSurfaceBottom != 1){
             mainObject.position.y = mainObject.position.y - 0.1
         }
@@ -513,12 +526,11 @@
         temp3.copy(camera.position);
         let cAndMDistance  = temp1.distanceTo( temp3 )
         //如果摄像机距离和物体太近就启用视角限制转移，否则就用视角自由转移
-        if (cAndMDistance < coronaSafetyDistance) {
+        if (cAndMDistance <= coronaSafetyDistance) {
             dir.copy( temp2 ).sub( temp3 ).normalize();
             const dis = temp2.distanceTo( temp3 ) - coronaSafetyDistance;
             camera.position.addScaledVector( dir, dis );
         }
-
         //视角自由转移速度
         var turnSpeed = moveSpeed/4
         camera.position.lerp(temp0, turnSpeed);
@@ -526,10 +538,6 @@
     }
 
 
-    //获取书笔和收藏模型
-    let book = new THREE.Object3D
-    let pencil = new THREE.Object3D
-    let star = new THREE.Object3D
     let whetherStand = 0
     let fatherObject = 0
     //点击物体，走近物体时跳出选项
@@ -537,13 +545,11 @@
         //获取被点击的主物体
         let temp = currentIntersect.object.parent.name + ''
         let tempObject = modelsGroup.getObjectByName(temp)
-        book = modelsGroup.getObjectByName('11004')
-        pencil = modelsGroup.getObjectByName('11005')
-        star = modelsGroup.getObjectByName('11006')
         //第一次将物体立起来
         if(whetherStand == 0){
             book.rotateX(Math.PI*0.5)
             star.rotateX(Math.PI*0.5)
+            pencil.rotateX(Math.PI*0.1)
             whetherStand = 1
         }
         //限制只有点击垃圾桶有效
@@ -579,7 +585,6 @@
 
 
     //获取被点击的对象集
-    let currentIntersect = null
     var objectsToTest = null
     function objectForClick(){
         var x = 0
@@ -600,11 +605,12 @@
             modelsGroup.getObjectByName('11009'),
             modelsGroup.getObjectByName('11010'),
             modelsGroup.getObjectByName('11011'),
+            modelsGroup.getObjectByName('11012')
         ]
 
     }
  
-    
+    let currentIntersect = null
     const clock = new THREE.Clock()
     let previousTime = 0
     //刷新屏幕动画
@@ -635,6 +641,7 @@
         if(intersects.length){
             currentIntersect = intersects[0];
         }else{
+            //如果是移动端，就不删去直到下一次触发
             currentIntersect = null;
         }
         
