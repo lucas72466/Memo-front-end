@@ -102,7 +102,7 @@
         sunLight.castShadow = true
 
         // Main camera 主物体摄像机
-        camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
+        camera = new THREE.PerspectiveCamera(60, sizes.width / sizes.height, 0.01, 500)
         camera.position.set(0,0,0)
         //camera.lookAt( scene.position );
         scene.add(camera)
@@ -113,6 +113,8 @@
         controls.enableDamping = true
         //控制摄像机保持在水平面以上
         controls.maxPolarAngle = Math.PI * 0.5
+        //改变XY轴反转，来匹配移动设备控制习惯
+        //controls.rotateSpeed = -1
 
         cameraRaycaster = new THREE.Raycaster()
         let currentIntersect = null
