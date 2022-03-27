@@ -3,9 +3,92 @@
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
     import * as dat from 'dat.gui'
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+    import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
     import Stats from 'stats.js'
     import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry, WebGLRenderer } from 'three'
+    import { io } from "socket.io-client";
+    
+    
+    
+    //连接多用户,一行代码就可生效
+    const socket = io();
+    //用户产生移动后将数据传给服务器
+    function clientMove(){
+        //将用户的当前位置传回服务器
+        socket.emit('clientPosition', mainObject.position)
+        //将用户的当前旋转传回服务器, 只要y轴旋转角
+        socket.emit('clientRotation', mainObject.rotation.y)
+    }
+    
+    var positionDic = {}
+    var rotationDic = {}
+    //监听位置词典是否发生变化
+    socket.on('positionDic', (dic)=>{
+        //获取存储所有用户位置的词典
+        positionDic = dic
+        //更新地图中所有用户的位置
+        moveClientObjects()
+    })
 
+    socket.on('rotationDic', (dic)=>{
+        //获取存储所有用户位置的词典
+        rotationDic = dic
+    })
+    
+    //存储当前在线人数
+    var NOC = 1 
+    //存储所有的在线用户模型
+    var clientsGroup = new THREE.Group()
+    clientsGroup.name = 'clientsGroup'
+    //任意用户位置产生变化后调用
+    function moveClientObjects(){
+
+        var n = 0
+        //获取当前存在的所有用户数量
+        for (var key in positionDic){ ++ n }
+        //根据是否存在人数变化来决定是否重新渲染角色
+        if ( NOC != n ){
+            //client数量一发生变化就清除重建
+            scene.remove(clientsGroup)
+            clientsGroup = new THREE.Group()
+            for (var key in positionDic){
+                //判断是不是主物体
+                if (socket.id != key) {
+                    const clientObject = new THREE.Mesh(
+                        new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
+                        new THREE.MeshStandardMaterial({ color: '#ff0000' })
+                    )
+                    clientObject.position.set(15, 1.3, -3)
+                    clientObject.scale.set(1,2,1)
+                    clientObject.rotateY(0)
+                    clientObject.name = key
+                    clientObject.castShadow = true
+                    clientsGroup.add(clientObject)
+                }
+            }
+        }
+        //根据位置词典来更新所有的用户位置
+        for (var key in positionDic){
+            //筛去主物体
+            if(socket.id != key){
+                let position = positionDic[key]
+                //利用ruler来旋转物体
+                let rotation = new THREE.Euler(0, rotationDic[key], 0)
+                clientsGroup.getObjectByName(key).position.setX(position.x)
+                clientsGroup.getObjectByName(key).position.setY(position.y)
+                clientsGroup.getObjectByName(key).position.setZ(position.z)
+                clientsGroup.getObjectByName(key).setRotationFromEuler(rotation)
+            }
+        }
+        NOC = n
+        scene.add(clientsGroup)
+    }
+    
+    
+    
+    
+    
+    
     //判断用户使用设备
     function IsPC() {
         var userAgentInfo = navigator.userAgent;
@@ -36,7 +119,7 @@
 
         //判断用户使用设备
         isPC = IsPC()
-        console.log(isPC);
+
         //资源加载检查
         manager = new THREE.LoadingManager();
 
@@ -102,7 +185,7 @@
         sunLight.castShadow = true
 
         // Main camera 主物体摄像机
-        camera = new THREE.PerspectiveCamera(60, sizes.width / sizes.height, 0.01, 500)
+        camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.01, 500)
         camera.position.set(0,0,0)
         //camera.lookAt( scene.position );
         scene.add(camera)
@@ -113,8 +196,6 @@
         controls.enableDamping = true
         //控制摄像机保持在水平面以上
         controls.maxPolarAngle = Math.PI * 0.5
-        //改变XY轴反转，来匹配移动设备控制习惯
-        //controls.rotateSpeed = -1
 
         cameraRaycaster = new THREE.Raycaster()
         let currentIntersect = null
@@ -127,8 +208,8 @@
     
     //检测资源加载进程
     manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
-        console.log( 'Started loading file: ' + url + '.\nLoaded ' 
-                    + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
+        // console.log( 'Started loading file: ' + url + '.\nLoaded ' 
+        //             + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
     };
     
     //获取书笔和收藏模型
@@ -137,7 +218,7 @@
     let star = new THREE.Object3D
     //检测资源加载是否完毕
     manager.onLoad = function ( ) {
-        console.log( 'Loading complete!')
+        // console.log( 'Loading complete!')
         //将被检测物体存入
         objectForClick()
         book = modelsGroup.getObjectByName('11004')
@@ -149,6 +230,25 @@
 
     //Models
     const gltfLoader = new GLTFLoader(manager)
+    const fbxLoader = new FBXLoader()
+
+    let mixer = null
+    fbxLoader.load('/models/test/test5.fbx', function ( object ) {
+        //获取动画
+        mixer = new THREE.AnimationMixer( object );  
+        var action = mixer.clipAction( object.animations[ 0 ] );
+        action.play();//播放
+        object.traverse( function ( child ) {
+        if ( child.isMesh ) {//材质
+            child.castShadow = true;
+            child.receiveShadow = true; 
+            }
+        } );
+        object.scale.set(0.01, 0.01, 0.01)
+        object.position.set(0,10,0)
+        scene.add( object );
+        
+    } );
 
     //加载模型文件 
     //.push()添加至末尾 .pop()删除末尾 .unshift()添加至开头 .splice()切片
@@ -156,8 +256,10 @@
     //modelsGroup储存模型对象，需要注意里面还有一层scene对象
     var modelsMessage = []
     var modelsGroup = new THREE.Group()
-    modelsGroup.name = 'papa'
+    modelsGroup.name = 'modelsGroup'
+    //添加两个
     scene.add(modelsGroup)
+    scene.add(clientsGroup)
     //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
     var numberOfModels = 14
     modelsMessage.push('/models/cctv/CCTV.gltf',0.5,0.5,0.5,-3,1,-14)
@@ -618,12 +720,18 @@
     //刷新屏幕动画
     function animate(){
         //获得帧率
+
         const elapsedTime = clock.getElapsedTime()
         let deltaTime = elapsedTime - previousTime
         previousTime = elapsedTime
         let FPS = 1/deltaTime
         //根据帧率来控制物体移动速度
         moveSpeed =  150 / (FPS * 20)
+
+        // Model animation
+        if(mixer){
+            mixer.update(deltaTime);
+        }
 
         //旋转跳出的三个物体
         book.rotateZ(0.01)
@@ -646,11 +754,13 @@
             //如果是移动端，就不删去直到下一次触发
             currentIntersect = null;
         }
-        
+
+
         //使用trigger来决定物体的视角移动方式
         if(moveLock1 == 0){
             onIntersect()
-            mainObjectMove()  
+            mainObjectMove()
+            clientMove()
         }
         
         //每帧都要更新镜头控制
