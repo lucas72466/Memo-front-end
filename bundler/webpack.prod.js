@@ -8,6 +8,7 @@ module.exports = merge(
         mode: 'production',
         plugins:
         [
+            //清理打包后的多余文件
             new CleanWebpackPlugin()
         ]
     }

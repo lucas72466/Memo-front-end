@@ -21,7 +21,7 @@ module.exports = merge(
             open: true,
             https: false,
             allowedHosts: 'all',
-            hot: false,
+            hot: true,//热更新，允许服务器进行刷新
             watchFiles: ['src/**', 'static/**'],
             static:
             {

@@ -9,9 +9,9 @@ module.exports = {
     {
         hashFunction: 'xxhash64',
         filename: 'bundle.[contenthash].js',
-        path: path.resolve(__dirname, '../dist')
+        path: path.resolve(__dirname, '../dist')//将地址片段解析成绝对地址
     },
-    devtool: 'source-map',
+    devtool: 'source-map',//确定打包的方式，可以通过牺牲错误信息提示的方式来加快速度
     plugins:
     [
         new CopyWebpackPlugin({
