@@ -7,7 +7,26 @@
     import Stats from 'stats.js'
     import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry, WebGLRenderer } from 'three'
     import { io } from "socket.io-client";
+    //引入模型数据
+    import { modelsMessage } from './modelMessage'
     
+    
+    //判断用户使用设备
+    function IsPC() {
+        var userAgentInfo = navigator.userAgent;
+        var Agents = ["Android", "iPhone",
+            "SymbianOS", "Windows Phone",
+            "iPad", "iPod"
+        ];
+        var flag = true;
+        for(var v = 0; v < Agents.length; v++) {
+            if(userAgentInfo.indexOf(Agents[v]) > 0) {
+                flag = false;
+                break;
+            }
+        }
+        return flag;
+    }
     
     
     //连接多用户,一行代码就可生效
@@ -20,6 +39,8 @@
         socket.emit('clientRotation', mainObject.rotation.y)
     }
     
+    
+    //存储客户端位置和方向词典
     var positionDic = {}
     var rotationDic = {}
     //监听位置词典是否发生变化
@@ -29,7 +50,6 @@
         //更新地图中所有用户的位置
         moveClientObjects()
     })
-
     socket.on('rotationDic', (dic)=>{
         //获取存储所有用户位置的词典
         rotationDic = dic
@@ -42,7 +62,6 @@
     clientsGroup.name = 'clientsGroup'
     //任意用户位置产生变化后调用
     function moveClientObjects(){
-
         var n = 0
         //获取当前存在的所有用户数量
         for (var key in positionDic){ ++ n }
@@ -82,28 +101,6 @@
         }
         NOC = n
         scene.add(clientsGroup)
-    }
-    
-    
-    
-    
-    
-    
-    //判断用户使用设备
-    function IsPC() {
-        var userAgentInfo = navigator.userAgent;
-        var Agents = ["Android", "iPhone",
-            "SymbianOS", "Windows Phone",
-            "iPad", "iPod"
-        ];
-        var flag = true;
-        for(var v = 0; v < Agents.length; v++) {
-            if(userAgentInfo.indexOf(Agents[v]) > 0) {
-                flag = false;
-                break;
-            }
-        }
-        return flag;
     }
     
     
@@ -201,24 +198,23 @@
         let currentIntersect = null
     }
     
-    //或许屏幕刷新频率
+    //获取屏幕刷新数据在左上角
     var stats = new Stats();
     stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild( stats.dom );
     
-    //检测资源加载进程
-    manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
-        // console.log( 'Started loading file: ' + url + '.\nLoaded ' 
-        //             + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
-    };
     
     //获取书笔和收藏模型
     let book = new THREE.Object3D
     let pencil = new THREE.Object3D
     let star = new THREE.Object3D
-    //检测资源加载是否完毕
+    //检测资源加载过程
+    manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+        // console.log( 'Started loading file: ' + url + '.\nLoaded ' 
+        //             + itemsLoaded + ' of ' + itemsTotal + ' files.' );   
+    };
+    //检测资源加载完毕后运行
     manager.onLoad = function ( ) {
-        // console.log( 'Loading complete!')
         //将被检测物体存入
         objectForClick()
         book = modelsGroup.getObjectByName('11004')
@@ -228,7 +224,7 @@
         animate()
     };
 
-    //Models
+    //模型加载器
     const gltfLoader = new GLTFLoader(manager)
     const fbxLoader = new FBXLoader()
 
@@ -251,34 +247,11 @@
     } );
 
     //加载模型文件 
-    //.push()添加至末尾 .pop()删除末尾 .unshift()添加至开头 .splice()切片
-    //mouelMessage[路径，长，宽，高，X，Y，Z]
     //modelsGroup储存模型对象，需要注意里面还有一层scene对象
-    var modelsMessage = []
     var modelsGroup = new THREE.Group()
     modelsGroup.name = 'modelsGroup'
-    //添加两个
-    scene.add(modelsGroup)
-    scene.add(clientsGroup)
-    //numberOfObjects 用来储存所有的对象，要加上非gltf导入对象，在刷新部分有用
-    var numberOfModels = 14
-    modelsMessage.push('/models/cctv/CCTV.gltf',0.5,0.5,0.5,-3,1,-14)
-    modelsMessage.push('/models/test/column.gltf',0.3,0.3,0.3,-6,2,4)
-    modelsMessage.push('/models/test/notice-board.gltf',0.3,0.3,0.3,1,0.4,21)
-    modelsMessage.push('/models/test/rubbish-bin.gltf',0.3,0.3,0.3,2,1.5,-13)
-    //一开始三个物体先放到地下
-    modelsMessage.push('/models/test/book.gltf',1.5,1.5,1.5,5,-5,-5)
-    modelsMessage.push('/models/test/pencil.gltf',1,1,1,5,-5,-5)
-    modelsMessage.push('/models/test/star.gltf',2,2,2,5,-5,-6)
-    //其他建筑
-    modelsMessage.push('/models/building_model/base.gltf',5,5,5,0,0,0)
-    modelsMessage.push('/models/building_model/build_Alsop.gltf',5,5,5,50,3,15)
-    modelsMessage.push('/models/building_model/build_EEE.gltf',5,5,5,25,10,-25)
-    modelsMessage.push('/models/building_model/build_FB.gltf',5,5,5,-35,10,15)
-    modelsMessage.push('/models/building_model/build_Guild.gltf',5,5,5,10,10,20)
-    modelsMessage.push('/models/building_model/build_Victoria.gltf',5,5,5,-40,10,-25)
 
-
+    //加载模型数据
     loadModels(modelsMessage)
     function loadModels(modelsMessage){
         const numbers  = modelsMessage.length/7
@@ -311,6 +284,10 @@
         }
     }
 
+    //添加两个group
+    scene.add(modelsGroup)
+    scene.add(clientsGroup)
+    
     //Main object 主物体
     //摄像机与主物体的距离
     var coronaSafetyDistance = 6;
@@ -690,12 +667,9 @@
     }
 
 
-    //获取被点击的对象集
+    //获取允许被点击的对象集
     var objectsToTest = null
     function objectForClick(){
-        var x = 0
-        x = modelsGroup.children.length 
-
         //在这里加入允许产生点击交互的物体
         objectsToTest = [
             modelsGroup.getObjectByName('mainObject'),
@@ -716,13 +690,13 @@
 
     }
  
+    
     let currentIntersect = null
     const clock = new THREE.Clock()
     let previousTime = 0
     //刷新屏幕动画
     function animate(){
         //获得帧率
-
         const elapsedTime = clock.getElapsedTime()
         let deltaTime = elapsedTime - previousTime
         previousTime = elapsedTime
@@ -792,6 +766,8 @@
     function clickBook(object){
         //object 用来追逐被点击的物体
         console.log(object)
+        stopMove = 0
+        controls.enabled = true
 
     }
 
