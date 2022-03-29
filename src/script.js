@@ -544,6 +544,8 @@
     //根据帧率来控制移动速度
     var moveSpeed = 0.0;
     var speed = 0.0
+    //控制总移动开关
+    var stopMove = 0
     function mainObjectMove(){
         //第三人称控制移动，相机距离位置很重要
         speed = 0
@@ -757,7 +759,7 @@
 
 
         //使用trigger来决定物体的视角移动方式
-        if(moveLock1 == 0){
+        if(moveLock1 == 0 && stopMove == 0){
             onIntersect()
             mainObjectMove()
             clientMove()
@@ -779,6 +781,8 @@
 
 
     function clickPencil(object){
+        stopMove = 1
+        controls.enabled = false
         //object 用来追逐被点击的物体
         console.log(object);
 
