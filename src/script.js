@@ -628,6 +628,9 @@
         //获取被点击的主物体
         let temp = currentIntersect.object.parent.name + ''
         let tempObject = modelsGroup.getObjectByName(temp)
+        if (temp == '') {
+            console.log(currentIntersect.object.name + '');
+        }
         //第一次将物体立起来
         if(whetherStand == 0){
             book.rotateX(Math.PI*0.5)
@@ -722,12 +725,15 @@
         //初始化射线方向
         cameraRaycaster.setFromCamera(mouse, camera)
 
-        var intersects = cameraRaycaster.intersectObjects(objectsToTest, true)
-        //存放相交的第一个物体
-        if(intersects.length){
-            currentIntersect = intersects[0];
+        var intersectsModels = cameraRaycaster.intersectObjects(objectsToTest, true)
+        var intersectsClients = cameraRaycaster.intersectObjects(clientsGroup.children, true)
+
+        //存放相交的第一个物体，先检测被点击对象是否是其他用户，在检测是否是固定物体
+        if(intersectsClients.length){
+            currentIntersect = intersectsClients[0];
+        }else if(intersectsModels.length){
+            currentIntersect = intersectsModels[0]
         }else{
-            //如果是移动端，就不删去直到下一次触发
             currentIntersect = null;
         }
 
@@ -768,6 +774,7 @@
         console.log(object)
         stopMove = 0
         controls.enabled = true
+        controls.update()
 
     }
 
