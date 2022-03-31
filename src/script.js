@@ -291,24 +291,6 @@
     const gltfLoader = new GLTFLoader(manager)
     const fbxLoader = new FBXLoader()
 
-    let mixer = null
-    fbxLoader.load('/models/test/test5.fbx', function ( object ) {
-        //获取动画
-        mixer = new THREE.AnimationMixer( object );  
-        var action = mixer.clipAction( object.animations[ 0 ] );
-        action.play();//播放
-        object.traverse( function ( child ) {
-        if ( child.isMesh ) {//材质
-            child.castShadow = true;
-            child.receiveShadow = true; 
-            }
-        } );
-        object.scale.set(0.01, 0.01, 0.01)
-        object.position.set(0,10,0)
-        scene.add( object );
-        
-    } );
-
     //加载模型文件 
     //modelsGroup储存模型对象，需要注意里面还有一层scene对象
     var modelsGroup = new THREE.Group()
@@ -350,17 +332,33 @@
     //添加两个group
     scene.add(modelsGroup)
     scene.add(clientsGroup)
-    
-    //Main object 主物体
-    //摄像机与主物体的距离
+
+    let mixer = null
+    let walkAction = null
+    let runAction = null
+    let stayAction = null
+    var mainObject = null
     var coronaSafetyDistance = 6;
     var follow = new THREE.Object3D;
-    const mainObject = new THREE.Mesh(
-        new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
-        new THREE.MeshStandardMaterial({ color: '#ff0000' })
-    )
+    gltfLoader.load('/models/character/Cow.gltf', (object)=>{
+        mixer = new THREE.AnimationMixer(object.scene)
+        walkAction = mixer.clipAction(object.animations[15])
+        runAction = mixer.clipAction(object.animations[8])
+        stayAction = mixer.clipAction(object.animations[2])
+        object.scene.traverse( function ( child ) {
+            if ( child.isMesh ) {//材质
+                child.castShadow = true;
+                child.receiveShadow = true; 
+                }
+            } );
+        //为了能够改变主物体位置要放在mainObject的里面，不能直接赋值
+        object.scene.position.y = -0.75
+        mainObject.add(object.scene)
+    })
+    
+    mainObject = new THREE.Object3D
     mainObject.position.set(15, 0.9, -3)
-    mainObject.scale.set(1,2,1)
+    mainObject.scale.set(1,1,1)
     mainObject.name = 'mainObject'
     //产生阴影
     mainObject.castShadow = true
@@ -370,7 +368,7 @@
     //主物体的起始位置
     mainObject.rotateY(-1)
     modelsGroup.add(mainObject)
-
+    
 
 
     //监听屏幕变化
@@ -658,7 +656,8 @@
             }
         }
         
-        //键盘控制 和 摇杆控制
+        //键盘控制 和 摇杆控制 和 动画控制
+        var turn = 0
         if(keys.w && intersectSurfaceFront != 1)
             speed = 0.05
         if((keys.s || bkdValue) && intersectSurfaceBack != 1)
@@ -669,14 +668,34 @@
             speed = -0.1 * bkdValue
         mainObject.translateZ(speed);
         
-        if(keys.a)
+        if(keys.a){
             mainObject.rotateY(0.03);
-        if(keys.d)
+            turn = 1
+        }
+        if(keys.d){
             mainObject.rotateY(-0.03);
-        if (lftValue)
+            turn = 1
+        }
+        if (lftValue){
             mainObject.rotateY(0.03 * lftValue);
-        if (rgtValue)
+            turn = 1
+        }
+        if (rgtValue){
             mainObject.rotateY(-0.03 * rgtValue);
+            turn = 1
+        }
+
+        
+        if (speed >0 || clickMoveLock == 1) {
+            walkAction.stop()
+            runAction.play()
+        }else if(turn == 1){
+            walkAction.play()
+        }else{
+            walkAction.stop()
+            runAction.stop()
+            stayAction.play()
+        }
         
         //上斜面，通过模糊高度变化来控制上行高度
         if(intersectSurfaceBottom == 1){
