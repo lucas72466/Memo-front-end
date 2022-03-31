@@ -48,7 +48,7 @@
     });
     
 
-    //将服务器开到3000端口
-    server.listen(3000, () => {
-      console.log('listening on *:3000');
+    //将服务器开到8080端口
+    server.listen(8080, () => {
+      console.log('listening on *:8080');
     });

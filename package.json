@@ -21,6 +21,7 @@
     "html-webpack-plugin": "^5.5.0",
     "lil-gui": "^0.11.0",
     "mini-css-extract-plugin": "^2.4.3",
+    "nipplejs": "^0.9.1",
     "portfinder-sync": "0.0.2",
     "raw-loader": "^4.0.2",
     "socket.io": "^4.4.1",

@@ -9,8 +9,67 @@
     import { io } from "socket.io-client";
     //引入模型数据
     import { modelsMessage } from './modelMessage'
-    
-    
+    //引入摇杆工具
+    import nipplejs from 'nipplejs'
+
+    function logSomething(){
+        console.log();
+    }
+
+    let fwdValue = null;
+    let bkdValue = null;
+    let rgtValue = null;
+    let lftValue = null;
+    var joystickMove = 1
+    let joyManager;
+    function addJoystick(){
+        const options = {
+             zone: document.getElementById('joystickWrapper1'),
+             size: 120,
+             multitouch: true,
+             maxNumberOfNipples: 2,
+             mode: 'static',
+             restJoystick: true,
+             shape: 'circle',
+             //position: { top: 100, left: 600 },
+             position: { bottom: '100px', right: '100px' },
+             dynamicPage: true,
+           }
+        
+        
+    joyManager = nipplejs.create(options);
+       
+    joyManager['0'].on('move', function (evt, data) {
+        const forward = data.vector.y
+        const turn = data.vector.x
+     
+        if (forward > 0) {
+            fwdValue = Math.abs(forward)
+            bkdValue = 0
+        } else if (forward < 0) {
+            fwdValue = 0
+            bkdValue = Math.abs(forward)
+        }
+     
+        if (turn > 0) {
+            lftValue = 0
+            rgtValue = Math.abs(turn)
+        } else if (turn < 0) {
+            lftValue = Math.abs(turn)
+            rgtValue = 0
+        }
+    })
+     
+    joyManager['0'].on('end', function (evt) {
+        bkdValue = null
+        fwdValue = null
+        lftValue = null
+        rgtValue = null
+        })
+       
+    }
+
+
     //判断用户使用设备
     function IsPC() {
         var userAgentInfo = navigator.userAgent;
@@ -217,6 +276,10 @@
     manager.onLoad = function ( ) {
         //将被检测物体存入
         objectForClick()
+        //如果是移动设备就默认打开操控杆
+        if ((!IsPC()) && joystickMove ) {
+            addJoystick()
+        }
         book = modelsGroup.getObjectByName('11004')
         pencil = modelsGroup.getObjectByName('11005')
         star = modelsGroup.getObjectByName('11006')
@@ -390,40 +453,55 @@
                 }
             })
         }
-        
-        
-        //ios系统需要特殊优化一下 “event.touches[0].pageX ”
-        window.addEventListener('touchstart',(event)=>{
-            //获取触摸点，以便进行碰撞检测
-            mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
-            mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
-            moveLock1 = 0
-            moveLock2 = 0
-        })
+    }
+    //移动端事件监听
+    touchChange()
+    function touchChange(){
+        //关闭摇杆控制后启用点击移动控制
+        if (!joystickMove) {
+            //ios系统需要特殊优化一下 “event.touches[0].pageX ”
+            window.addEventListener('touchstart',(event)=>{
+                //获取触摸点，以便进行碰撞检测
+                mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
+                mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
+                moveLock1 = 0
+                moveLock2 = 0
+            })
 
-        window.addEventListener('touchend',()=>{
-            moveLock2 = 1
-            if (moveLock1 == 0 && currentIntersect) {
-                eventSwitch = 2
-                //确保每次点击都能获得新的导航点
-                clickMoveLock = 0
-                currentIntersect =null
-                //初始化移动距离防止被碰撞检测抵消
-                nextDistance = 0
-            }
-        })
-        
-        window.addEventListener('touchmove',(event)=>{
-            //鼠标移动的模糊值，过滤掉细小的鼠标移动
-            tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
-            tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
-            if(moveLock2 == 0 && (tempX+tempY) >= 1 ){
-                moveLock1 = 1
-                eventSwitch = 1
-            }
-            tempX = mouse.x * 1000
-            tempY = mouse.y * 1000
-        })
+            window.addEventListener('touchend',()=>{
+                moveLock2 = 1
+                if (moveLock1 == 0 && currentIntersect) {
+                    jumpObjects()
+                    eventSwitch = 2
+                    //确保每次点击都能获得新的导航点
+                    clickMoveLock = 0
+                    currentIntersect =null
+                    //初始化移动距离防止被碰撞检测抵消
+                    nextDistance = 0
+                }
+            })
+
+            window.addEventListener('touchmove',(event)=>{
+                //鼠标移动的模糊值，过滤掉细小的鼠标移动
+                tempX = (tempX-mouse.x * 1000) * (tempX-mouse.x * 1000)
+                tempY = (tempY-mouse.y * 1000) * (tempY-mouse.y * 1000)
+                if(moveLock2 == 0 && (tempX+tempY) >= 1 ){
+                    moveLock1 = 1
+                    eventSwitch = 1
+                }
+                tempX = mouse.x * 1000
+                tempY = mouse.y * 1000
+            })
+        }else{
+            window.addEventListener('touchstart', (event)=>{
+                //获取触摸点，以便进行碰撞检测
+                mouse.x = event.touches[0].pageX / sizes.width * 2 - 1
+                mouse.y = - (event.touches[0].pageY / sizes.height) * 2 + 1
+            })
+            window.addEventListener('touchend', (event)=>{
+                jumpObjects()
+            })
+        }   
     }
 
 
@@ -532,8 +610,6 @@
             //通过标记clickMoveLock来完成持续刷新动作
             //同时通过判断currentIntersect来防止移动设备的识别错误
             if((clickMoveLock != 1) && currentIntersect){
-                //调用二级物体触发方法
-                jumpObjects()
                 //将主物体移动到点击位置
                 let dir1 = new THREE.Vector3(0, 0, 1)
                 let vertexWorldCoord = dir1.clone().applyMatrix4(mainObject.matrixWorld)
@@ -582,17 +658,25 @@
             }
         }
         
-        //键盘控制
+        //键盘控制 和 摇杆控制
         if(keys.w && intersectSurfaceFront != 1)
             speed = 0.05
-        if(keys.s && intersectSurfaceBack != 1)
+        if((keys.s || bkdValue) && intersectSurfaceBack != 1)
             speed = -0.05
+        if( fwdValue && intersectSurfaceFront != 1)
+            speed = 0.1 * fwdValue
+        if( bkdValue && intersectSurfaceBack != 1)
+            speed = -0.1 * bkdValue
         mainObject.translateZ(speed);
         
-        if(keys.a )
+        if(keys.a)
             mainObject.rotateY(0.03);
-        if(keys.d )
+        if(keys.d)
             mainObject.rotateY(-0.03);
+        if (lftValue)
+            mainObject.rotateY(0.03 * lftValue);
+        if (rgtValue)
+            mainObject.rotateY(-0.03 * rgtValue);
         
         //上斜面，通过模糊高度变化来控制上行高度
         if(intersectSurfaceBottom == 1){
@@ -699,6 +783,7 @@
     let previousTime = 0
     //刷新屏幕动画
     function animate(){
+        logSomething()
         //获得帧率
         const elapsedTime = clock.getElapsedTime()
         let deltaTime = elapsedTime - previousTime
