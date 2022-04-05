@@ -1,0 +1,169 @@
+{
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5123,
+            "count" : 1188,
+            "max" : [
+                975
+            ],
+            "min" : [
+                0
+            ],
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 976,
+            "max" : [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "min" : [
+                -1.0,
+                -15.647770881652832,
+                -1.0
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 976,
+            "max" : [
+                0.995184600353241,
+                1.0,
+                0.9951846599578857
+            ],
+            "min" : [
+                -0.995184600353241,
+                -1.0,
+                -0.995184600353241
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 976,
+            "max" : [
+                1.0,
+                0.003483811393380165,
+                0.9951846599578857,
+                1.0
+            ],
+            "min" : [
+                -0.9951846599578857,
+                -0.06253081560134888,
+                -0.9951846599578857,
+                -1.0
+            ],
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5126,
+            "count" : 976,
+            "max" : [
+                1.0,
+                0.9900000002235174
+            ],
+            "min" : [
+                0.0,
+                0.0
+            ],
+            "type" : "VEC2"
+        }
+    ],
+    "asset" : {
+        "generator" : "Khronos Blender glTF 2.0 exporter",
+        "version" : "2.0"
+    },
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 2376,
+            "byteOffset" : 0,
+            "target" : 34963
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 11712,
+            "byteOffset" : 2376,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 11712,
+            "byteOffset" : 14088,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 15616,
+            "byteOffset" : 25800,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 7808,
+            "byteOffset" : 41416,
+            "target" : 34962
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 49224,
+            "uri" : "column.bin"
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "ShapeIndexedFaceSet",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "NORMAL" : 2,
+                        "POSITION" : 1,
+                        "TANGENT" : 3,
+                        "TEXCOORD_0" : 4
+                    },
+                    "indices" : 0
+                }
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "ShapeIndexedFaceSet",
+            "rotation" : [
+                1.7763576864331977e-15,
+                1.376787679419067e-07,
+                -1.376787679419067e-07,
+                1.0
+            ],
+            "scale" : [
+                0.5519980192184448,
+                0.6000000834465027,
+                0.5519980788230896
+            ],
+            "translation" : [
+                0.0,
+                2.307158946990967,
+                -0.0
+            ]
+        }
+    ],
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ]
+}

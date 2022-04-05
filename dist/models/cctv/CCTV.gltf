@@ -1,0 +1,184 @@
+{
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5123,
+            "count" : 3660,
+            "max" : [
+                2623
+            ],
+            "min" : [
+                0
+            ],
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 2624,
+            "max" : [
+                1.9263629913330078,
+                1.0,
+                1.9263629913330078
+            ],
+            "min" : [
+                -1.9263629913330078,
+                -48.15415954589844,
+                -1.9263629913330078
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 2624,
+            "max" : [
+                0.9999999403953552,
+                1.0,
+                0.9999999403953552
+            ],
+            "min" : [
+                -0.9999999403953552,
+                -1.0,
+                -0.9999999403953552
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 2624,
+            "max" : [
+                1.0,
+                5.4319738410413265e-05,
+                0.9951862692832947,
+                1.0
+            ],
+            "min" : [
+                -0.9951862692832947,
+                -5.4319738410413265e-05,
+                -0.9951862692832947,
+                -1.0
+            ],
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5126,
+            "count" : 2624,
+            "max" : [
+                1.0,
+                1.0
+            ],
+            "min" : [
+                0.0,
+                0.0
+            ],
+            "type" : "VEC2"
+        }
+    ],
+    "asset" : {
+        "generator" : "Khronos Blender glTF 2.0 exporter",
+        "version" : "2.0"
+    },
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 7320,
+            "byteOffset" : 0,
+            "target" : 34963
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 31488,
+            "byteOffset" : 7320,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 31488,
+            "byteOffset" : 38808,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 41984,
+            "byteOffset" : 70296,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 20992,
+            "byteOffset" : 112280,
+            "target" : 34962
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 133272,
+            "uri" : "CCTV.bin"
+        }
+    ],
+    "materials" : [
+        {
+            "name" : "Shape",
+            "pbrMetallicRoughness" : {
+                "baseColorFactor" : [
+                    0.6400000190734865,
+                    0.6400000190734865,
+                    0.6400000190734865,
+                    1.0
+                ],
+                "metallicFactor" : 0.0
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "ShapeIndexedFaceSet",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "NORMAL" : 2,
+                        "POSITION" : 1,
+                        "TANGENT" : 3,
+                        "TEXCOORD_0" : 4
+                    },
+                    "indices" : 0,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "ShapeIndexedFaceSet",
+            "rotation" : [
+                8.470329472543003e-22,
+                1.376787679419067e-07,
+                -1.376787679419067e-07,
+                1.0
+            ],
+            "scale" : [
+                0.5191130042076111,
+                0.5191130638122559,
+                0.5191130638122559
+            ],
+            "translation" : [
+                5.717667550357575e-13,
+                22.997451782226562,
+                -2.475323819615266e-13
+            ]
+        }
+    ],
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ]
+}

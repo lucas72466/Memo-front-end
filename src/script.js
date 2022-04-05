@@ -5,16 +5,26 @@
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
     import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
     import Stats from 'stats.js'
-    import { LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry, WebGLRenderer } from 'three'
+    import { DirectionalLightShadow, LogLuvEncoding, TetrahedronBufferGeometry, TetrahedronGeometry, WebGLRenderer } from 'three'
     import { io } from "socket.io-client";
     //引入模型数据
-    import { modelsMessage } from './modelMessage'
+    import { modelsMessage, characterMessage} from './modelMessage'
     //引入摇杆工具
     import nipplejs from 'nipplejs'
 
     function logSomething(){
-        console.log();
+        //console.log(mainObject.position);
     }
+    
+    //随机生成人物角色
+    function getRandomIntInclusive(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
+    }
+    var characterNumber = getRandomIntInclusive(0,9)
+    var mainCharacter = Object.keys(characterMessage)[characterNumber]
+    
 
     let fwdValue = null;
     let bkdValue = null;
@@ -93,25 +103,24 @@
     //用户产生移动后将数据传给服务器
     function clientMove(){
         //将用户的当前位置传回服务器
-        socket.emit('clientPosition', mainObject.position)
+        socket.emit('clientMove', mainObject.position, mainObject.rotation.y, mainCharacter)
         //将用户的当前旋转传回服务器, 只要y轴旋转角
-        socket.emit('clientRotation', mainObject.rotation.y)
+        //socket.emit('clientRotation', mainObject.rotation.y)
     }
     
     
     //存储客户端位置和方向词典
     var positionDic = {}
     var rotationDic = {}
+    var characterDic = {}
     //监听位置词典是否发生变化
-    socket.on('positionDic', (dic)=>{
+    socket.on('positionChange', (dic1, dic2, dic3)=>{
         //获取存储所有用户位置的词典
-        positionDic = dic
+        positionDic = dic1
+        rotationDic = dic2
+        characterDic = dic3
         //更新地图中所有用户的位置
         moveClientObjects()
-    })
-    socket.on('rotationDic', (dic)=>{
-        //获取存储所有用户位置的词典
-        rotationDic = dic
     })
     
     //存储当前在线人数
@@ -132,16 +141,10 @@
             for (var key in positionDic){
                 //判断是不是主物体
                 if (socket.id != key) {
-                    const clientObject = new THREE.Mesh(
-                        new THREE.BoxBufferGeometry( 0.8, 0.8, 0.8),
-                        new THREE.MeshStandardMaterial({ color: '#ff0000' })
-                    )
-                    clientObject.position.set(15, 1.3, -3)
-                    clientObject.scale.set(1,2,1)
-                    clientObject.rotateY(0)
-                    clientObject.name = key
-                    clientObject.castShadow = true
-                    clientsGroup.add(clientObject)
+                    let a = characterDic[key]
+                    let newObject = cloneGltf(characterGroup.getObjectByName(a))
+                    newObject.name = key
+                    clientsGroup.add(newObject)
                 }
             }
         }
@@ -153,7 +156,7 @@
                 //利用ruler来旋转物体
                 let rotation = new THREE.Euler(0, rotationDic[key], 0)
                 clientsGroup.getObjectByName(key).position.setX(position.x)
-                clientsGroup.getObjectByName(key).position.setY(position.y)
+                clientsGroup.getObjectByName(key).position.setY(position.y - 0.7)
                 clientsGroup.getObjectByName(key).position.setZ(position.z)
                 clientsGroup.getObjectByName(key).setRotationFromEuler(rotation)
             }
@@ -286,18 +289,72 @@
         //加载完毕后再进行第一次刷新页面
         animate()
     };
+    
+    //clone 带皮骨骼对象需要特殊的clone方法
+    function cloneGltf(gltf){
+        //动画功能现在没办法使用
+        // const clone = {
+        //     animations: gltf.animations,
+        //     scene: gltf.clone(true)
+        //   };
+        const clone = gltf.clone(true)
+        
+        const skinnedMeshes = {};
+        
+        gltf.traverse(node => {
+            if (node.isSkinnedMesh) {
+              skinnedMeshes[node.name] = node;
+            }
+          });
+        
+        const cloneBones = {};
+        const cloneSkinnedMeshes = {};
+        
+        clone.traverse(node => {
+            if (node.isBone) {
+              cloneBones[node.name] = node;
+            }
+        
+            if (node.isSkinnedMesh) {
+              cloneSkinnedMeshes[node.name] = node;
+            }
+          });
+        
+        for (let name in skinnedMeshes) {
+            const skinnedMesh = skinnedMeshes[name];
+            const skeleton = skinnedMesh.skeleton;
+            const cloneSkinnedMesh = cloneSkinnedMeshes[name];
+        
+            const orderedCloneBones = [];
+        
+            for (let i = 0; i < skeleton.bones.length; ++i) {
+              const cloneBone = cloneBones[skeleton.bones[i].name];
+              orderedCloneBones.push(cloneBone);
+            }
+        
+            cloneSkinnedMesh.bind(
+                new THREE.Skeleton(orderedCloneBones, skeleton.boneInverses),
+                cloneSkinnedMesh.matrixWorld);
+          }
+          return clone;
+    }
 
-    //模型加载器
+      //模型加载器
     const gltfLoader = new GLTFLoader(manager)
     const fbxLoader = new FBXLoader()
 
     //加载模型文件 
     //modelsGroup储存模型对象，需要注意里面还有一层scene对象
     var modelsGroup = new THREE.Group()
+    var characterGroup = new THREE.Group()
+    var characterAnimationGroup = new THREE.Group()
     modelsGroup.name = 'modelsGroup'
+    characterGroup.name = 'characterGroup'
 
     //加载模型数据
+    let characterName = characterMessage
     loadModels(modelsMessage)
+    loadCharacters(characterMessage)
     function loadModels(modelsMessage){
         const numbers  = modelsMessage.length/7
         for(var i = 0 ; i < numbers; i++){
@@ -328,8 +385,28 @@
             )
         }
     }
+    function loadCharacters(characterMessage){
+        for (var key in characterMessage){
+            //three.js 的加载器的顺序有问题，需要重新跟踪一下坐标！！！！！！
+            //这一步很关键
+            const x = key
+            gltfLoader.load(characterMessage[x], (object)=>{
+                object.scene.traverse( function ( child ) {
+                    if ( child.isMesh ) {//材质
+                        child.castShadow = true;
+                        child.receiveShadow = true; 
+                        }
+                    } );
+                object.scene.name = x
+                //模型加载的顺序并不一样，需要特殊获得数据
+                //object.scene.position.set(15, 0, -3)
+                //为了能够改变主物体位置要放在mainObject的里面，不能直接赋值
+                characterGroup.add(object.scene)
+            })
+        }
+    }
 
-    //添加两个group
+    //添加group
     scene.add(modelsGroup)
     scene.add(clientsGroup)
 
@@ -340,7 +417,9 @@
     var mainObject = null
     var coronaSafetyDistance = 6;
     var follow = new THREE.Object3D;
-    gltfLoader.load('/models/character/Cow.gltf', (object)=>{
+    //characterMessage[mainCharacter]
+    //随机选取一个人物角色
+    gltfLoader.load(characterMessage[mainCharacter], (object)=>{
         mixer = new THREE.AnimationMixer(object.scene)
         walkAction = mixer.clipAction(object.animations[15])
         runAction = mixer.clipAction(object.animations[8])
@@ -352,12 +431,13 @@
                 }
             } );
         //为了能够改变主物体位置要放在mainObject的里面，不能直接赋值
-        object.scene.position.y = -0.75
+        //数值可能会引起人物跳动，暂未完美解决问题
+        object.scene.position.y = -0.6
         mainObject.add(object.scene)
     })
     
     mainObject = new THREE.Object3D
-    mainObject.position.set(15, 0.9, -3)
+    mainObject.position.set(15, 2, -3)
     mainObject.scale.set(1,1,1)
     mainObject.name = 'mainObject'
     //产生阴影
@@ -442,6 +522,7 @@
             window.addEventListener('mouseup',()=>{
                 moveLock2 = 1
                 if (moveLock1 == 0 && currentIntersect) {
+                    jumpObjects()
                     eventSwitch = 2
                     //确保每次点击都能获得新的导航点
                     clickMoveLock = 0
@@ -699,7 +780,7 @@
         
         //上斜面，通过模糊高度变化来控制上行高度
         if(intersectSurfaceBottom == 1){
-            mainObject.position.y = (0.8-intersectSurfaceDistance) + mainObject.position.y
+            mainObject.position.y = (0.6-intersectSurfaceDistance) + mainObject.position.y
         }else if(intersectSurfaceBottom != 1){
             mainObject.position.y = mainObject.position.y - 0.1
         }
@@ -778,7 +859,7 @@
     function objectForClick(){
         //在这里加入允许产生点击交互的物体
         objectsToTest = [
-            modelsGroup.getObjectByName('mainObject'),
+            //modelsGroup.getObjectByName('mainObject'),
             modelsGroup.getObjectByName('11000'),
             modelsGroup.getObjectByName('11001'),
             modelsGroup.getObjectByName('11002'),

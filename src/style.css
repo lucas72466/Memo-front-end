@@ -16,6 +16,7 @@ body
     top: 0;
     left: 0;
     outline: none;
+    z-index:-1;
 }
 
 .joystickWrapper1 {
@@ -30,3 +31,11 @@ body
     touch-action: manipulation;
     background-color: rgba(red, 0.2);
   }
+
+#app{
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    z-index: 100;
+}

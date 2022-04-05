@@ -27,9 +27,23 @@ let previousTime = 0
     const deltaTime = elapsedTime - previousTime
     previousTime = elapsedTime
 
-
-
-
+//FBX
+fbxLoader.load('/models/character/cow-walk.fbx', function ( object ) {
+    //获取动画
+    mixer = new THREE.AnimationMixer( object );  
+    var action = mixer.clipAction( object.animations[ 0 ] );
+    action.play();//播放
+    object.traverse( function ( child ) {
+    if ( child.isMesh ) {//材质
+        child.castShadow = true;
+        child.receiveShadow = true; 
+        }
+    } );
+    object.scale.set(0.01, 0.01, 0.01)
+    object.position.set(0,0.7,0)
+    scene.add( object );
+    
+} );
 
 
 /**

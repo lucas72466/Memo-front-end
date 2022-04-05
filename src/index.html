@@ -3,12 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--导入最新的vue-->>
+    <script src="https://unpkg.com/vue@next"></script>
+    <!-- 导入样式库 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <!-- 导入组件 -->
+    <script src="https://unpkg.com/element-plus"></script>
     <title>
         MemoMap
     </title>
+    <style type="text/css" src="style.css"></style>
 </head>
 <body>    
     <canvas class="webgl"></canvas>
     <div id="joystickWrapper1"></div>
+    <div id="app"></div>
+    <script>
+        const App = {
+        data() {
+            return {
+                message: "Hello Element Plus",
+            };
+        },
+        methods: {
+            clickButton(){
+                
+                this.message = 'you do it'
+            }
+        },
+        template:`
+        <el-button id='001' type="success" size="large" @click="clickButton">{{ message }}</el-button>
+        <el-button id='002' type="success" size="large" @click="clickButton">{{ message }}</el-button>
+        `
+        };
+        const app = Vue.createApp(App);
+        //引用API插件
+        app.use(ElementPlus);
+        //加载到app部分
+        //app.mount("#app");
+    </script>
 </body>
 </html>

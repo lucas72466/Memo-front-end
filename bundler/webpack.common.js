@@ -1,6 +1,10 @@
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCSSExtractPlugin = require('mini-css-extract-plugin')
+const AutoImport = require('unplugin-auto-import/webpack')
+const Components = require('unplugin-vue-components/webpack')
+const { ElementPlusResolver } = require('unplugin-vue-components/resolvers')
+
 const path = require('path')
 
 module.exports = {
@@ -23,7 +27,15 @@ module.exports = {
             template: path.resolve(__dirname, '../src/index.html'),
             minify: true
         }),
-        new MiniCSSExtractPlugin()
+        new MiniCSSExtractPlugin(),
+        
+        AutoImport({
+            resolvers: [ElementPlusResolver()],
+          }),
+          
+        Components({
+            resolvers: [ElementPlusResolver()],
+        }),
     ],
     module:
     {

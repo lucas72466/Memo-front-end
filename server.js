@@ -21,28 +21,25 @@
     //创建旋转和位置词典
     var positionDic = {}
     var rotationDic = {}
+    var characterDic = {}
     //监听client创建链接并启用监听
     io.on('connection', (socket) => {    
       
       //任意用户位置发生变化都会更新位置字典
-      socket.on('clientPosition', (position) => {
+      socket.on('clientMove', (position, rotation, character) => {
         positionDic[socket.id] = position
-        //将位置字典广播给每个client
-        socket.emit('positionDic', positionDic)
-      });
-
-      //旋转词典
-      socket.on('clientRotation', (rotation) => {
         rotationDic[socket.id] = rotation
-        socket.emit('rotationDic', rotationDic)
+        characterDic[socket.id] = character
+        //将位置字典广播给每个client
+        socket.emit('positionChange', positionDic, rotationDic, characterDic)
       });
-      
       
       //监听client断开链接事件
       socket.on('disconnect', () => {
         //删除用户位置信息
         delete positionDic[socket.id]
         delete rotationDic[socket.id]
+        delete characterDic[socket.id]
       });
 
     });
